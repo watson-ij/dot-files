@@ -1,0 +1,799 @@
+#+TITLE: Emacs Configuration
+#+AUTHOR: Ian J. Watson
+#+PROPERTY: header-args :tangle emacs.el
+
+# The property header above adds the tangle directive to all code
+# blocks.
+
+* Initialisation and Clean Up
+
+Do some initial clean up. I don't want any bars out to the side, I
+don't want things ringing, I don't want ~ files left all over the
+place.
+
+On the other hand, I do want MELPA to be setup, and to be using the
+latest org-mode.
+
+#+BEGIN_SRC emacs-lisp
+  (progn
+    (package-initialize)
+    (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+    (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+
+    (setq inhibit-startup-message t)
+    (defalias 'yes-or-no-p 'y-or-n-p)
+
+    (tool-bar-mode -1)
+    (menu-bar-mode -1)
+    (scroll-bar-mode -1)
+    (fringe-mode 5)
+
+    (setq ring-bell-function 'ignore)
+
+    (setq backup-directory-alist '(("." . "~/.backups")))
+    (setq backup-by-copying t		; don't clobber symlinks
+	  version-control t		; use versioned backups
+	  delete-old-versions t
+	  kept-new-versions 6
+	  kept-old-versions 2)
+
+    (setf epa-pinentry-mode 'loopback)
+    (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+
+    (global-set-key (kbd "M-g") 'goto-line)
+
+    (setq debugger-stack-frame-as-list t))
+
+  (setq-default cursor-type 'box)
+  (use-package smex :ensure t)
+
+  (if (string= (system-name) "TheBeast")
+      (add-to-list 'exec-path "/home/iyan/.local/bin"))
+#+END_SRC
+
+This is maybe not great, by default tramp deals with its connections
+on a separate ControlMaster, but at some point (connecting to
+lxplus?), I wanted to have the term and tramp to talk through the same
+connection. This overwrites the options to ssh so it uses the
+.ssh/config version.
+
+#+BEGIN_SRC emacs-lisp
+(setq tramp-ssh-controlmaster-options "")
+#+END_SRC
+
+* use-package
+
+Now, we don't need to worry about package-install'ing packages.
+
+#+BEGIN_SRC emacs-lisp
+(require 'use-package)
+#+END_SRC
+
+From the use-package homepage: https://github.com/jwiegley/use-package
+
+Use the =:init= keyword to execute code before a package is loaded. It
+accepts one or more forms, up to the next keyword.
+
+Similarly, =:config= can be used to execute code after a package is
+loaded. In cases where loading is done lazily (see more about
+autoloading below), this execution is deferred until after the
+autoload occurs.
+
+Another common thing to do when loading a module is to bind a key to
+primary commands within that module:
+
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package ace-jump-mode
+  :bind ("C-." . ace-jump-mode))
+#+END_SRC
+
+This does two things: first, it creates an autoload for the
+ace-jump-mode command and defers loading of ace-jump-mode until you
+actually use it. Second, it binds the key C-. to that command. After
+loading, you can use M-x describe-personal-keybindings to see all such
+keybindings you've set throughout your .emacs file.
+
+Slightly different from binding a key to a keymap, is binding a key within a local keymap that only exists after the package is loaded. use-package supports this with a :map modifier, taking the local keymap to bind to.
+
+Normally :bind expects that commands are functions that will be autoloaded from the given package. However, this does not work if one of those commands is actually a keymap, since keymaps are not functions, and cannot be autoloaded using Emacs' autoload mechanism.
+
+To handle this case, use-package offers a special, limited variant of :bind called :bind-keymap. The only difference is that the "commands" bound to by :bind-keymap must be keymaps defined in the package, rather than command functions. This is handled behind the scenes by generating custom code that loads the package containing the keymap, and then re-executes your keypress after the first load, to reinterpret that keypress as a prefix key.
+
+The :hook keyword allows adding functions onto hooks, here only the basename of the hook is required.
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package ace-jump-mode
+  :hook prog-mode)
+
+(use-package ace-jump-mode
+  :hook (prog-mode . ace-jump-mode))
+#+END_SRC
+
+If your package needs a directory added to the load-path in order to load, use :load-path. This takes a symbol, a function, a string or a list of strings. If the path is relative, it is expanded within user-emacs-directory:
+
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package ess-site
+  :load-path "site-lisp/ess/lisp/"
+  :commands R)
+#+END_SRC
+
+The :custom keyword allows customization of package custom variables.
+The :custom-face keyword allows customization of package custom faces.
+
+* Truth and Beauty: Themes
+
+Some useful variables for changing themes depending on the system:
+
+=system-type= The value is a symbol indicating the type of operating
+system you are using.
+
+=(system-name)= Return the host name of the machine you are running
+on, as a string.
+
+** Poet Mode
+
+=poet-mode= is a rather lovely setup. Augment it by using some
+interesting fonts. I particularly like the slanty comments.
+
+#+BEGIN_SRC emacs-lisp
+  ;; Try also FiraCode, Hack, Input. These need to be outside
+  ;; use-package to be used properly everywhere
+  (set-face-attribute 'default nil :family "Hack" :width 'normal :weight 'regular :height 250)
+  (set-face-attribute 'fixed-pitch nil :family "Hack")
+  (set-face-attribute 'variable-pitch nil :family "Libre Baskerville" :height 250)
+  (set-face-attribute 'font-lock-comment-face nil :family "Hack" :weight 'normal :slant 'italic :height 250)
+  (set-face-attribute 'font-lock-keyword-face nil :family "Hack" :weight 'normal :slant 'normal :height 250)
+    (add-hook 'text-mode-hook
+	       (lambda ()
+		(variable-pitch-mode 1)))
+  (use-package poet-theme :ensure t
+    :init
+    :config
+    (defun show-face-at-point ()
+      (interactive)
+      (message "%s" (face-at-point)))
+    (blink-cursor-mode 0))
+#+END_SRC
+
+** Olivetti
+
+Centers the text of a buffer and restricts the line-width. Nice for org
+
+#+BEGIN_SRC emacs-lisp
+  (use-package olivetti
+    :ensure t
+    :after (org)
+    :hook ((org-mode . olivetti-mode)
+	   (org-mode . (lambda () (interactive) (setq olivetti-body-width 85))))
+    :config)
+#+END_SRC
+
+* Dired
+
+From the manual:
+
+```If non-nil, Dired tries to guess a default target directory.
+This means: if there is a Dired buffer displayed in the next
+window, use its current directory, instead of this Dired buffer’s
+current directory.```
+
+#+BEGIN_SRC emacs-lisp
+  (setq dired-dwim-target t)
+#+END_SRC
+
+Subtree: can't live without it.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package dired-subtree :ensure t
+    :after dired
+    :bind (("C-x C-d" . dired-jump) 
+	   :map dired-mode-map
+	   ("<tab>" . dired-subtree-toggle)
+	   ("<backtab>" . #'dired-subtree-cycle))
+    :config
+    (setq dired-listing-switches "-alh")
+    (set-face-background 'dired-subtree-depth-1-face "#bbaaaa")
+    (set-face-background 'dired-subtree-depth-2-face "#aaaa99")
+    (set-face-background 'dired-subtree-depth-3-face "#aa99aa")
+    (set-face-background 'dired-subtree-depth-4-face "#aabbbb")
+    (set-face-background 'dired-subtree-depth-5-face "#babbaa")
+    (set-face-background 'dired-subtree-depth-6-face "#cacbbb"))
+#+END_SRC
+
+* Magit
+
+The king of all git viewers.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package magit :ensure t
+    :bind (("C-x g" . magit-status))
+    :config)
+#+END_SRC
+
+* Ivy
+
+Navigation the right way.
+
+Some hints:
+- After =C-x C-f= for find-file, you can use =M-n= to basically run
+  =ffap=
+  + =M-n= in an ivy completion context is actually for the next
+    history item, since when we start, there is no next in the
+    history, it tries to "predict" the history by guessing you wanted
+    the thing-at-point.
+  + This is a general [[https://oremacs.com/2016/02/15/counsel-ffap/][ivy feature]], so works in =swiper= too to swipe
+    the thing at point
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ivy :ensure t
+    :after (smex)
+    :bind (("C-s" . swiper)
+	   ("M-x" . counsel-M-x)
+	   ("C-x C-f" . counsel-find-file)
+	   ("<f1> f" . counsel-describe-function)
+	   ("<f1> v" . counsel-describe-variable)
+	   ("<f1> l" . counsel-find-library)
+	   ("<f2> i" . counsel-info-lookup-symbol)
+	   ("<f2> u" . counsel-unicode-char)
+	   ("C-c k" . counsel-rg)
+	   ("M-y" . counsel-yank-pop)
+	   :map swiper-map
+	   ("M-c" . swiper-mc-fixed)
+	   :map read-expression-map
+	   ("C-r" . counsel-expression-history))
+
+    :config
+    (defun swiper-mc-fixed ()
+      (interactive)
+      (setq swiper--current-window-start nil)
+      (swiper-mc))
+    (use-package ivy-hydra :ensure t)
+    (use-package counsel :ensure t)
+    (ivy-mode 1)
+    (setq ivy-use-virtual-buffers t)
+    (setq ivy-count-format "(%d/%d) ")
+    (setq counsel-rg-base-command "rg -S --no-heading --line-number --color never %s .")
+
+    (use-package ivy-xref :ensure t
+      :config (setq xref-show-xrefs-function #'ivy-xref-show-xrefs))
+  
+    ;; Insert the file name into the buffer instead of opening it
+    (defun ivy-insert-action (x)
+      (with-ivy-window
+	(insert x)))
+    (ivy-set-actions t '(("i" ivy-insert-action "insert"))))
+#+END_SRC
+
+=ivy-rich= adds information about buffers/files
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ivy-rich
+    :ensure t
+    :after (ivy)
+    :config
+    (ivy-rich-mode 1)
+    (setq
+     ivy-virtual-abbreviate 'full
+     ivy-rich-switch-buffer-align-virtual-buffer t
+     ivy-rich-path-style 'abbrev))
+#+END_SRC
+
+* Avy
+
+#+BEGIN_SRC emacs-lisp
+(use-package avy :ensure t
+  :config
+  (use-package key-chord :ensure t)
+  (use-package ace-window :ensure t)
+  
+  (key-chord-mode 1)
+  (setq key-chord-two-keys-delay 0.02)
+  (key-chord-define-global "xg" 'magit-status)
+  (key-chord-define-global "qe" 'avy-goto-word-or-subword-1)
+  (key-chord-define-global "qw" 'avy-goto-char)
+  (key-chord-define-global ";'" 'other-window)
+;;  (key-chord-define-global ",." 'delete-other-windows)
+  (key-chord-define-global "zx" 'counsel-M-x)
+  (key-chord-define-global "]\\" 'ace-window))
+#+END_SRC
+
+* pdf-tools
+
+#+BEGIN_SRC emacs-lisp
+(use-package pdf-tools :ensure t
+  :config
+  (pdf-tools-install))
+#+END_SRC
+
+* Multiple Cursors
+
+#+BEGIN_SRC emacs-lisp
+(use-package multiple-cursors :ensure t
+  :config
+  (global-set-key (kbd "C->") 'mc/mark-next-like-this)
+  (setq mc/always-run-for-all t) ; stop asking me you bastard
+  (setq mc/list-file "~/.emacs.d/.mc-lists.el"))
+#+END_SRC
+
+* Org
+
+#+BEGIN_SRC emacs-lisp
+
+  (use-package org
+    :bind (("C-c l" . org-store-link)
+	   ("C-c a" . org-agenda)
+	   ("C-c c" . org-capture)
+	   ("C-c b" . org-iswitchb)
+	   :map org-mode-map
+	   ("C-;" . org-toggle-inline-images))
+    :config
+    (setq
+     org-default-notes-file "~/Dropbox/org/inbox.org"
+     org-agenda-files '("~/Dropbox/org/" "~/Dropbox/2017-korea/org")
+     org-directory "/home/iyan/Dropbox/org"
+     org-latex-images-centered nil
+     org-export-use-babel t
+     org-confirm-babel-evaluate nil)
+
+    (require 'ox-beamer)
+    (setq org-latex-images-centered nil)
+
+    (add-to-list 'image-type-file-name-regexps '("\\.pdf\\'" . imagemagick))
+    (add-to-list 'image-file-name-extensions "pdf")
+    (setq imagemagick-types-inhibit (remove 'PDF imagemagick-types-inhibit))
+    (setq org-image-actual-width 600)
+    (add-hook 'org-mode-hook 'flyspell-mode)
+    (add-hook 'org-mode-hook (lambda () (interactive) (setq cursor-type 'bar)))
+
+    (require 'org-bullets)
+    (setq org-bullets-bullet-list
+	  '("◉" "○"))
+    (add-hook 'org-mode-hook 'org-bullets-mode)
+
+    (org-add-link-type
+     "color" nil
+     (lambda (path desc format)
+       (cond
+	((eq format 'html)
+	 (format "<span style=\"color:%s;\">%s</span>" path desc))
+	((eq format 'latex)
+	 (format "{\\color{%s}%s}" path desc)))))
+
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((emacs-lisp . t)
+       (python . t)
+       (ditaa . t)
+       (dot . t)
+       (plantuml . t)
+       (gnuplot . t)
+       (nim . t)
+					  ;(sh . t)
+       (org . t)
+       (hy . t)
+       (scheme . t)
+					  ;(julia . t)
+       (latex . t)))
+
+    (add-to-list 'org-structure-template-alist
+		 `("r" ,(concat "#+BEGIN_SRC python :session root :results file :exports results\n"
+				"?\n"
+				"#+END_SRC\n"
+				"#+ATTR_LATEX: :width 0.4\\textwidth\n"
+				"#+RESULTS:\n[[file:]]\n")))
+
+    (use-package deft :ensure t)
+    (setq org-src-preserve-indentation nil))
+#+END_SRC
+
+* Mu4e
+
+#+BEGIN_SRC emacs-lisp
+  (require 'secrets)
+  (add-to-list 'load-path "~/install/mu/mu4e")
+  (use-package mu4e
+    :bind (("<f12>" . mu4e)
+	   ("C-0" . mu4e))
+    :config
+    (require 'smtpmail)
+    (setq
+     mu4e-mu-binary "~/install/mu/mu/mu"
+     mu4e-maildir "~/.mail"
+     mu4e-trash-folder "/cern/Deleted Items"
+     mu4e-refile-folder "/Archive"
+     mu4e-get-mail-command "true"
+     ;; mu4e-update-interval 300 ;; second
+     mu4e-compose-signature-auto-include nil
+     mu4e-view-show-images t
+     mu4e-view-show-addresses t
+     mu4e-attachment-dir "~/Downloads"
+     mu4e-use-fancy-chars t
+     mu4e-sent-folder "/cern/Sent Items"
+     mu4e-drafts-folder "/cern/Drafts"
+     smtpmail-stream-type 'starttls
+     smtpmail-smtp-service 587
+     user-mail-address "ian.james.watson@cern.ch"
+     smtpmail-default-smtp-server "smtp.cern.ch"
+     smtpmail-local-domain "cern.ch"
+     smtpmail-smtp-user "iawatson"
+     smtpmail-smtp-server "smtp.cern.ch"
+     mu4e-context-policy 'pick-first
+     mu4e-compose-context-policy nil
+     message-send-mail-function 'message-send-mail-with-sendmail
+     ;; we substitute sendmail with msmtp
+     sendmail-program "msmtp"
+     starttls-use-gnutls t
+     mu4e-html2text-command "w3m -dump -s -T text/html -o display_link_number=true")
+    (setq mu4e-contexts
+	  `(,(make-mu4e-context
+	      :name "cern"
+	      :enter-func (lambda () (mu4e-message "Entering cern context"))
+	      :leave-func (lambda () (mu4e-message "Leaving cern context"))
+	      ;; we match based on the contact-fields of the message
+	      :match-func (lambda (msg)
+			    (when msg
+			      (mu4e-message-contact-field-matches msg
+								  :to "ian.james.watson@cern.ch")))
+	      :vars '((user-mail-address . "ian.james.watson@cern.ch")
+		      (mu4e-sent-folder . "/cern/Sent Items")
+		      (mu4e-drafts-folder . "/cern/Drafts")
+		      (user-mail-address . "ian.james.watson@cern.ch")
+		      (smtpmail-default-smtp-server . "smtp.cern.ch")
+		      (smtpmail-local-domain . "cern.ch")
+		      (smtpmail-smtp-user . "iawatson")
+		      (smtpmail-smtp-server . "smtp.cern.ch")
+		      (smtpmail-stream-type . starttls)
+		      (smtpmail-smtp-service . 587)
+		      (message-sendmail-extra-arguments . ("-a" "cern"))
+		      (user-full-name . "Ian J. Watson")
+		      (mu4e-compose-signature . (concat "Cheers,\n" "Ian\n"))))))
+    )
+#+END_SRC
+
+Some help on setting up contexts:
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  ,(make-mu4e-context
+     :name "Work"
+     :enter-func (lambda () (mu4e-message "Switch to the Work context"))
+     ;; no leave-func
+     ;; we match based on the maildir of the message
+     ;; this matches maildir /Arkham and its sub-directories
+     :match-func (lambda (msg)
+		   (when msg
+		     (string-match-p "^/Arkham" (mu4e-message-field msg :maildir))))
+     :vars '( ( user-mail-address       . "aderleth@miskatonic.example.com" )
+	      ( user-full-name          . "Alice Derleth" )
+	      ( mu4e-compose-signature  .
+		(concat
+		  "Prof. Alice Derleth\n"
+		  "Miskatonic University, Dept. of Occult Sciences\n")))))
+		  
+
+  ,(make-mu4e-context
+     :name "Cycling"
+     :enter-func (lambda () (mu4e-message "Switch to the Cycling context"))
+     ;; no leave-func
+     ;; we match based on the maildir of the message; assume all
+     ;; cycling-related messages go into the /cycling maildir
+     :match-func (lambda (msg)
+		   (when msg
+		     (string= (mu4e-message-field msg :maildir) "/cycling")))
+     :vars '( ( user-mail-address       . "aderleth@example.com" )
+	      ( user-full-name          . "AliceD" )
+	      ( mu4e-compose-signature  . nil)))))
+#+END_SRC
+
+* C/C++ [also LSP, which includes python]
+
+Eck, this is always a pain in the bottom. Try the LSP to do this.
+
+** =eglot=
+
+=eglot= is a lightweight LSP client. For C++ you'll need to use [[https://github.com/MaskRay/ccls][=ccls=]],
+for python, it uses [[https://github.com/palantir/python-language-server][=pyls=]].
+
+https://github.com/joaotavora/eglot
+
+#+BEGIN_SRC emacs-lisp
+(use-package eglot :ensure t
+  :config
+  (add-hook 'python-mode-hook (lambda ()
+			     (interactive)
+			     (local-set-key (kbd "M-n") #'flymake-goto-next-error)
+			     (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))
+  (add-hook 'c++-mode-hook (lambda ()
+			     (interactive)
+			     (local-set-key (kbd "M-n") #'flymake-goto-next-error)
+			     (local-set-key (kbd "M-p") #'flymake-goto-prev-error))))
+#+END_SRC
+
+** OLD irony
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  (use-package irony :ensure t
+    :config
+    (use-package irony-eldoc :ensure t)
+    (use-package company-irony :ensure t)
+    (eval-after-load 'company
+      '(add-to-list 'company-backends 'company-irony))
+    (require 'company)
+
+    (add-hook 'c++-mode-hook 'irony-mode)
+    (add-hook 'c-mode-hook 'irony-mode)
+    (add-hook 'objc-mode-hook 'irony-mode)
+
+    (add-hook 'c++-mode-hook 'irony-eldoc)
+    (add-hook 'c-mode-hook 'irony-eldoc)
+    (add-hook 'objc-mode-hook 'irony-eldoc)
+
+    (add-hook 'c++-mode-hook 'company-mode)
+    (add-hook 'c-mode-hook 'company-mode)
+    (add-hook 'objc-mode-hook 'company-mode)
+
+    (add-hook 'c++-mode-hook (lambda () (local-set-key (kbd "C-<tab>") 'company-complete)))
+    (add-hook 'c-mode-hook (lambda () (local-set-key (kbd "C-<tab>") 'company-complete)))
+    (add-hook 'objc-mode-hook (lambda () (local-set-key (kbd "C-<tab>") 'company-complete)))
+
+    (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options))
+#+END_SRC
+
+* emacs-lisp
+
+#+BEGIN_SRC 
+(add-hook 'emacs-lisp-mode-hook (lambda ()
+				  (company-mode 1)
+				  (local-set-key (kbd "C-<tab>") 'company-complete))) 
+#+END_SRC
+
+lispy, maybe with the new keyboard paredit will end up better?
+
+#+BEGIN_SRC emacs-lisp
+(use-package lispy :ensure t
+  :config
+  (add-hook 'emacs-lisp-mode-hook #'lispy-mode))
+#+END_SRC
+
+** CERN ROOT in emacs setup
+
+My own personal nonsense to look at ROOT files in emacs and to run
+plotting code. You'll have to have =pymacs= setup first for it to run.
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path "/home/iyan/.emacs.d/lisp")
+(require 'pymacs)
+(setq pymacs-load-path '("/Users/mcawesomegary/Dropbox/emacs-root"))
+(add-to-list 'load-path "/Users/mcawesomegary/Dropbox/emacs-root")
+(require 'eroot)
+;; (load "~/.emacs.d/root-mode.el") ;; this was the old version
+#+END_SRC
+
+* geiser: scheme
+
+#+BEGIN_SRC emacs-lisp
+  (use-package geiser
+    :bind (:map geiser-mode-map
+		("C-<tab>" . company-complete))
+    :config
+    (setq geiser-active-implementations '(guile chicken)))
+#+END_SRC
+
+* golang
+
+#+BEGIN_SRC emacs-lisp
+  (use-package go-mode :ensure t
+    :hook ((go-mode . go-eldoc-setup)
+	   (go-mode . flycheck-mode))
+    :config
+    (setenv "GOPATH" "/home/iyan/go")
+    (add-hook 'go-mode-hook (lambda ()
+			      (set (make-local-variable 'company-backends) '(company-go))
+			      (setq company-tooltip-limit 20)                      ; bigger popup window
+			      (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
+			      (setq company-echo-delay 0)                          ; remove annoying blinking
+			      (setq company-begin-commands '(self-insert-command)) ; start autocompletion only after typing
+			      (company-mode)))
+    (add-hook 'go-mode-hook (lambda ()
+			      (local-set-key (kbd "C-<tab>") 'company-complete)
+			      (local-set-key (kbd "M-.") 'godef-jump)
+			      (local-set-key (kbd "C-c C-d") 'godoc-at-point)
+			      ))
+    (add-hook 'before-save-hook #'gofmt-before-save)
+    (setq gofmt-before-save t))
+
+  (use-package company-go :ensure t :after (go-mode)
+    :config)
+  (use-package go-eldoc :ensure t :after (go-mode))
+#+END_SRC
+
+* Nim
+
+#+BEGIN_SRC emacs-lisp
+(use-package nim-mode :ensure t
+  :config
+  (add-to-list 'exec-path "~/install/Nim/bin")
+  (setenv "PATH" (concat (getenv "PATH") ":~/install/Nim/bin"))
+  (setenv "LD_LIBRARY_PATH" (concat (getenv "LD_LIBRARY_PATH") ":" (getenv "HOME") "/install/root/build_root/lib"))
+  (require 'company)
+  (add-hook 'nim-mode-hook 'nimsuggest-mode)
+  (setq nimsuggest-path "~/install/Nim/bin/nimsuggest")
+  (add-hook 'nimsuggest-mode-hook 'company-mode)
+  (add-hook 'nimsuggest-mode-hook 'flymake-mode)
+  (use-package ob-nim :ensure t))
+#+END_SRC
+
+* elfeed: rss reader
+
+#+BEGIN_SRC emacs-lisp
+(use-package elfeed-org :ensure t
+  :config
+  (setq elfeed-search-title-max-width 150)
+  (elfeed-org)
+  (setq rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+#+END_SRC
+
+* Random ancillary modes
+** Mingus (mpd-based music player)
+
+#+BEGIN_SRC emacs-lisp
+(use-package mingus :ensure t)
+#+END_SRC
+
+** sane-term
+
+#+BEGIN_SRC emacs-lisp
+(use-package sane-term :ensure t
+  :bind (("C-x t" . sane-term)
+	 ("C-x T" . sane-term-create))
+  :config
+  (add-hook 'term-mode-hook (lambda () (interactive) (local-set-key (kbd "C-c C-l") 'sane-term-mode-toggle))))
+#+END_SRC
+
+** zig mode
+
+#+BEGIN_SRC emacs-lisp
+(use-package zig-mode :ensure t
+  :config
+  (autoload 'zig-mode "zig-mode" nil t)
+  (add-to-list 'auto-mode-alist '("\\.zig\\'" . zig-mode)))
+#+END_SRC
+
+* Startup buffers
+
+#+BEGIN_SRC emacs-lisp
+(org-toggle-sticky-agenda t)
+(defun ijw-agenda ()
+  (interactive)
+  (delete-other-windows)
+  (org-agenda-list)
+  (org-todo-list))
+(global-set-key (kbd "<f10>") 'ijw-agenda)
+(ijw-agenda)
+;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
+; (load "/home/iyan/.opam/4.06.1/share/emacs/site-lisp/tuareg-site-file")
+(require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
+;; ## end of OPAM user-setup addition for emacs / base ## keep this line
+#+END_SRC
+
+* exwm
+
+https://github.com/ch11ng/exwm
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path "/Users/mcawesomegary/.emacs.d/lisp/xelb")
+(require 'xcb)
+(add-to-list 'load-path "/Users/mcawesomegary/.emacs.d/lisp/exwm")
+(require 'exwm)
+(require 'exwm-config)
+(require 'desktop-environment)
+(desktop-environment-mode)
+
+(setq desktop-environment-brightness-normal-increment "5%+")
+(setq desktop-environment-brightness-normal-decrement "5%-")
+(setq desktop-environment-brightness-small-increment "1%+")
+(setq desktop-environment-brightness-small-decrement "1%-")
+
+(setq display-time-format "%l:%M %p %a %d/%m/%Y")
+(display-time-mode 1)
+(setq battery-mode-line-format " -- %b%p %L")
+(display-battery-mode)
+
+;; this seems to work sometimes?
+(require 'exwm-systemtray)
+(exwm-systemtray-enable)
+
+;; Set the initial workspace number.
+(setq exwm-workspace-number 4)
+;; Make class name the buffer name
+(add-hook 'exwm-update-class-hook
+	  (lambda () (exwm-workspace-rename-buffer exwm-class-name)))
+
+;; commands
+(exwm-input-set-key (kbd "s-p") 'counsel-linux-app)
+(exwm-input-set-key (kbd "s-s") 'ansi-term)
+(exwm-input-set-key (kbd "s-r") #'exwm-reset)
+(exwm-input-set-key (kbd "s-w") #'exwm-workspace-switch)
+(dotimes (i 10)
+  (exwm-input-set-key (kbd (format "s-%d" i))
+                      `(lambda ()
+                         (interactive)
+                         (exwm-workspace-switch-create ,i))))
+;; 's-l': Launch application
+(exwm-input-set-key (kbd "s-l")
+                    (lambda (command)
+                      (interactive (list (read-shell-command "$ ")))
+                      (start-process-shell-command command nil command)))
+;; Line-editing shortcuts
+(setq exwm-input-simulation-keys
+      '(([?\C-b] . [left])
+        ([?\C-f] . [right])
+        ([?\C-p] . [up])
+        ([?\C-n] . [down])
+        ([?\C-a] . [home])
+        ([?\C-e] . [end])
+        ([?\M-v] . [prior])
+        ([?\C-v] . [next])
+        ([?\C-d] . [delete])
+        ([?\C-k] . [S-end delete])))
+;; Enable EXWM
+(exwm-enable)
+#+END_SRC
+
+
+Moving around windows:
+
+#+BEGIN_SRC emacs-lisp
+(exwm-input-set-key (kbd "s-<right>") 'windmove-right)
+(exwm-input-set-key (kbd "s-<left>") 'windmove-left)
+(exwm-input-set-key (kbd "s-<up>") 'windmove-up)
+(exwm-input-set-key (kbd "s-<down>") 'windmove-down)
+
+(push (elt (kbd "s-<right>") 0) exwm-input-prefix-keys)
+(push (elt (kbd "s-<left>") 0) exwm-input-prefix-keys)
+(push (elt (kbd "s-<up>") 0) exwm-input-prefix-keys)
+(push (elt (kbd "s-<down>") 0) exwm-input-prefix-keys)
+#+END_SRC
+
+* Keyboardio.el
+
+For details on the setup see:
+https://github.com/algernon/kaleidoscope.el
+(note the firmware setup guide is outdated)
+
+#+BEGIN_SRC emacs-lisp
+(use-package kaleidoscope
+  :load-path "/home/iyan/Arduino/Model01-Firmware/kaleidoscope.el/"
+  :config)
+
+#+END_SRC
+
+A hook for compilation, basically stolen from kaleidoscope-evil-state-flash.
+
+#+BEGIN_SRC emacs-lisp
+  (defun ijw/on-compile-done (buffer msg)
+    (if (string-match "^finish" msg)	; (setq msg "abc")
+	(kaleidoscope-send-command :let/setAll (kaleidoscope-color-to-rgb "#FF0000"))
+      (kaleidoscope-send-command :let/setAll (kaleidoscope-color-to-rgb "#00ff00")))
+    (run-at-time "1" nil (kaleidoscope-send-command :let/setAll (kaleidoscope-color-to-rgb "#00ff00"))))
+
+(defun ijw/kaleidoscope-setup ()
+  (interactive)
+  (add-hook 'compilation-finish-functions 'ijw/on-compile-done))
+(defun ijw/kaleidoscope-teardown ()
+  (interactive)
+  (remove-hook 'compilation-finish-functions 'ijw/on-compile-done))
+#+END_SRC
+
+* Postscript: Setting up This File
+
+The following tangles this very file after save, so all you need to
+put in your config is =(load-file "~/Dropbox/dot-files/emacs.el")=
+
+#+BEGIN_SRC emacs-lisp
+  (defun my/tangle-on-save-emacs-config-org-file ()
+    (when (string= buffer-file-name (file-truename "~/Dropbox/dot-files/emacs.org"))
+      (org-babel-tangle)))
+  (add-hook 'after-save-hook #'my/tangle-on-save-emacs-config-org-file)
+#+END_SRC
+
+Maybe also add =(custom-set-variables)= above it so that the theme
+code can be added before the load.
