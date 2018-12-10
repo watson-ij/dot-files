@@ -47,6 +47,10 @@ latest org-mode.
   (setq-default cursor-type 'box)
   (use-package smex :ensure t)
 
+  (use-package keyfreq :ensure t)
+  (keyfreq-mode 1)
+  (keyfreq-autosave-mode 1)
+
   (if (string= (system-name) "TheBeast")
       (add-to-list 'exec-path "/home/iyan/.local/bin"))
 #+END_SRC
@@ -129,12 +133,12 @@ system you are using.
 =(system-name)= Return the host name of the machine you are running
 on, as a string.
 
-** Poet Mode
+** Poet Mode DEPRECATED
 
 =poet-mode= is a rather lovely setup. Augment it by using some
 interesting fonts. I particularly like the slanty comments.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   ;; Try also FiraCode, Hack, Input. These need to be outside
   ;; use-package to be used properly everywhere
   (set-face-attribute 'default nil :family "Hack" :width 'normal :weight 'regular :height 250)
@@ -147,11 +151,7 @@ interesting fonts. I particularly like the slanty comments.
 		(variable-pitch-mode 1)))
   (use-package poet-theme :ensure t
     :init
-    :config
-    (defun show-face-at-point ()
-      (interactive)
-      (message "%s" (face-at-point)))
-    (blink-cursor-mode 0))
+    :config)
 #+END_SRC
 
 ** Olivetti
@@ -165,6 +165,180 @@ Centers the text of a buffer and restricts the line-width. Nice for org
     :hook ((org-mode . olivetti-mode)
 	   (org-mode . (lambda () (interactive) (setq olivetti-body-width 85))))
     :config)
+#+END_SRC
+
+** Ian's theme
+
+My attempt to create my own theme
+
+https://gist.github.com/sylecn/fee6caf59bc6d2e84eaddb257a9f8cff
+example of setting various different fonts.
+
+#+BEGIN_SRC emacs-lisp
+    (use-package rainbow-mode :ensure t)
+    (deftheme ians-theme "A theme for Ian")
+
+    ;; color palette, turn on rainbow mode to see the colors in-buffer
+    (let* (
+
+	   ;; (bg-color "#dddde7")
+	   ;; (bg-color-dark "#ccccd7")
+	   ;; (bg-color-very-dark "#777797")
+	   ;; (bg-color-light "#e5e5f5")
+	   ;; (fg-color "#222266")
+	   ;; (fg-color-light "#444488")
+	   ;; (fg-color-dark "#000055")
+	   ;; (fg-color-very-dark "#000022")
+
+	   ;(fg-color "#dddde7")
+	   ;(fg-color-dark "#ccccd7")
+	   ;(fg-color-very-dark "#777797")
+	   ;(fg-color-light "#e5e5f5")
+	   ;(bg-color "#222266")
+	   ;(bg-color-light "#444488")
+	   ;(bg-color-dark "#000055")
+	   ;(bg-color-very-dark "#000022")
+
+	   (bg-color "#ddefdd")
+	   (bg-color-dark "#ccd7cc")
+	   (bg-color-very-dark "#779777")
+	   (bg-color-light "#e5f5e5")
+	   (fg-color "#222266")
+	   (fg-color-light "#444488")
+	   (fg-color-dark "#000055")
+	   (fg-color-very-dark "#000022")
+
+	   (verb-color "#888860")
+	   (mid-color "#777760")
+	   (contrast-color "#992222")
+	   (highlight-color "#447799")
+	   (success-color "#55bb22")
+  ;	 (code-font "UbuntuMono Nerd Font")
+  ;	 (code-font "Space Mono Nerd Font")
+	   (code-font "Operator Mono")
+  ;	   (vari-font "Libre Baskerville")
+	   (vari-font "Operator Mono"))
+      (custom-theme-set-faces
+       'ians-theme
+
+       ;; basic colors
+       `(default ((t (:foreground ,fg-color :background ,bg-color :weight light))))
+       `(header-line ((t (:foreground ,fg-color-dark :background ,bg-color :weight bold :slant italic))))
+       `(cursor ((t (:foreground ,mid-color :background ,mid-color))))
+       `(button ((t (:underline t))))
+       `(fringe ((t (:foreground ,bg-color :background ,bg-color))))
+       `(link ((t (:foreground ,highlight-color))))
+       `(link ((t (:foreground ,highlight-color :slant oblique :underline t))))
+       `(region ((t (:background ,bg-color-dark))))
+       `(success ((t (:foreground ,success-color :weight bold))))
+       `(warning ((t (:foreground ,contrast-color :weight bold))))
+       `(highlight ((t (:foreground ,highlight-color :weight semi-bold))))
+
+       ;; modeline
+       `(mode-line ((t (:foreground ,fg-color :background ,bg-color :weight semi-bold :slant italic :box (:line-width 3 :color ,bg-color)))))
+       `(mode-line-inactive ((t (:foreground ,fg-color :background ,bg-color :weight normal :slant normal :box (:line-width 3 :color ,bg-color)))))
+       `(menu ((t (:foreground ,fg-color :backgroudn ,bg-color))))
+       `(minibuffer-prompt ((t (:foreground ,fg-color :background ,bg-color))))
+
+       ;; show-paren
+       `(show-paren-match ((t (:foreground ,fg-color :background ,bg-color-dark :weight normal))))
+
+       ;; font-lock
+       `(font-lock-builtin-face ((t (:foreground ,fg-color :weight light :slant italic))))
+       `(font-lock-comment-face ((t (:foreground ,fg-color-light :weight light :slant italic))))
+       ;; `(font-lock-comment-delimiter-face ((t (:foreground ,zenburn-green-2))))
+       ;; `(font-lock-constant-face ((t (:foreground ,zenburn-green+4))))
+       `(font-lock-doc-face ((t (:foreground ,fg-color-light))))
+       `(font-lock-function-name-face ((t (:foreground ,fg-color-dark))))
+       `(font-lock-keyword-face ((t (:foreground ,fg-color :weight normal))))
+       ;; `(font-lock-negation-char-face ((t (:foreground ,zenburn-yellow :weight bold))))
+       ;; `(font-lock-preprocessor-face ((t (:foreground ,zenburn-blue+1))))
+       ;; `(font-lock-regexp-grouping-construct ((t (:foreground ,zenburn-yellow :weight bold))))
+       ;; `(font-lock-regexp-grouping-backslash ((t (:foreground ,zenburn-green :weight bold))))
+       `(font-lock-string-face ((t (:foreground ,fg-color-light :weight normal :slant italic))))
+       `(font-lock-type-face ((t (:foreground ,contrast-color))))
+       `(font-lock-variable-name-face ((t (:foreground ,highlight-color))))
+       `(font-lock-warning-face ((t (:foreground ,contrast-color :weight bold))))
+
+       ;; org-mode
+       `(org-level-1 ((t (:slant italic :weight bold))))
+       `(org-level-2 ((t (:weight bold :inherit default))))
+       `(org-date ((t (:underline t :slant italic :inherit default))))
+       `(org-block ((t (:background ,bg-color-light :family ,code-font))))
+       `(org-document-info-keyword ((t (:slant italic :foreground ,bg-color-very-dark :family ,code-font))))
+       `(org-meta-line ((t (:background ,bg-color-dark :weight bold :family ,code-font))))
+       `(org-table ((t (:background ,bg-color-light :weight normal :family ,code-font))))
+       `(org-block-end-line ((t (:background ,bg-color-dark :weight bold :family ,code-font))))
+       `(org-block-begin-line ((t (:background ,bg-color-dark :weight bold :family ,code-font))))
+       `(org-verbatim ((t (:foreground ,verb-color :weight extra-light))))
+
+       ;; comint
+       `(comint-highlight-prompt ((t (:weight bold :slant normal))))
+       `(comint-highlight-input ((t (:weight normal :slant italic))))
+       )
+      (set-face-attribute 'variable-pitch nil :family vari-font :height 275)
+      (set-face-attribute 'default nil :family code-font :height 280)
+      ;; (set-face-attribute 'tooltip nil :family code-font :height 280)
+      ;; (set-face-attribute 'fixed-pitch nil :family code-font)
+      ;; (set-face-attribute 'font-lock-comment-face nil :family code-font)
+      ;; (set-face-attribute 'font-lock-keyword-face nil :family code-font)
+      ;; (set-face-attribute 'org-block nil :family code-font :height 280)
+
+      )
+
+  (add-hook 'text-mode-hook
+	    (lambda ()
+	      (variable-pitch-mode 1)))
+
+  (custom-theme-set-variables
+   'ians-theme
+   )
+
+  (provide-theme 'ians-theme)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+  ;; (add-to-list 'custom-theme-load-path "/home/iyan/Dropbox/dot-files")
+  ;; (load-theme 'ians-theme t)
+#+END_SRC
+
+Some helper functions
+
+#+BEGIN_SRC emacs-lisp
+    (defun show-face-at-point ()
+      (interactive)
+      (message "%s" (face-at-point)))
+    (blink-cursor-mode 0)
+#+END_SRC
+
+Resources:
+- http://emacsfodder.github.io/blog/notes-on-deftheme/
+
+** Buffer face mode testing
+
+https://stackoverflow.com/questions/23142699/in-gnu-emacs-how-to-set-background-color-by-mode
+
+You could add this as a hook for per-mode backgrounds. Don't do it in
+org-mode, it interferes with all the other goodness, like
+source-buffers. I would say, setup ians-theme for org-mode, then add
+any per-mode coloring here.
+
+#+BEGIN_SRC emacs-lisp :tangle no
+(defun buffer-background-red ()
+  (interactive)
+  (setq buffer-face-mode-face `(:background "#ccccff"))
+  (buffer-face-mode 1))
+#+END_SRC
+
+There's also this, which seems more understandable:
+
+#+BEGIN_SRC emacs-lisp :tangle no
+  ; Define a face
+  (defface purple-haze '((t :background "#ccccff")) "Purple haze")
+  ; Then add a hook to the mode of your choice:
+  (add-hook 'python-mode-hook
+	    (lambda () ; face-remap-add-relative is where the magic happens
+	      (face-remap-add-relative 'default 'purple-haze)))
 #+END_SRC
 
 * Dired
@@ -225,10 +399,10 @@ Some hints:
 
 #+BEGIN_SRC emacs-lisp
   (use-package ivy :ensure t
-    :after (smex)
     :bind (("C-s" . swiper)
 	   ("M-x" . counsel-M-x)
 	   ("C-x C-f" . counsel-find-file)
+	   ("C-x b" . ivy-switch-buffer)
 	   ("<f1> f" . counsel-describe-function)
 	   ("<f1> v" . counsel-describe-variable)
 	   ("<f1> l" . counsel-find-library)
@@ -268,7 +442,6 @@ Some hints:
 #+BEGIN_SRC emacs-lisp
   (use-package ivy-rich
     :ensure t
-    :after (ivy)
     :config
     (ivy-rich-mode 1)
     (setq
@@ -314,6 +487,17 @@ Some hints:
   (setq mc/list-file "~/.emacs.d/.mc-lists.el"))
 #+END_SRC
 
+* geiser: scheme
+
+#+BEGIN_SRC emacs-lisp
+    (use-package geiser
+      ;; :bind (:map geiser-mode-map
+      ;; 		("C-<tab>" . company-complete))
+      :config
+      (setq geiser-active-implementations '(guile chicken)))
+  
+#+END_SRC
+
 * Org
 
 #+BEGIN_SRC emacs-lisp
@@ -342,11 +526,13 @@ Some hints:
     (setq imagemagick-types-inhibit (remove 'PDF imagemagick-types-inhibit))
     (setq org-image-actual-width 600)
     (add-hook 'org-mode-hook 'flyspell-mode)
-    (add-hook 'org-mode-hook (lambda () (interactive) (setq cursor-type 'bar)))
+    (add-hook 'org-mode-hook (lambda () (interactive) (setq cursor-type '(bar . 4))))
 
     (require 'org-bullets)
     (setq org-bullets-bullet-list
-	  '("◉" "○"))
+          '("✽" "✾" "❀" "❁")
+	  ;'("◉" "⦾" "•")
+	  )
     (add-hook 'org-mode-hook 'org-bullets-mode)
 
     (org-add-link-type
@@ -549,6 +735,7 @@ lispy, maybe with the new keyboard paredit will end up better?
 
 #+BEGIN_SRC emacs-lisp
 (use-package lispy :ensure t
+  :hook (emacs-lisp-mode-hook . show-paren-mode)
   :config
   (add-hook 'emacs-lisp-mode-hook #'lispy-mode))
 #+END_SRC
@@ -565,16 +752,6 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
 (add-to-list 'load-path "/Users/mcawesomegary/Dropbox/emacs-root")
 (require 'eroot)
 ;; (load "~/.emacs.d/root-mode.el") ;; this was the old version
-#+END_SRC
-
-* geiser: scheme
-
-#+BEGIN_SRC emacs-lisp
-  (use-package geiser
-    :bind (:map geiser-mode-map
-		("C-<tab>" . company-complete))
-    :config
-    (setq geiser-active-implementations '(guile chicken)))
 #+END_SRC
 
 * golang
