@@ -14,6 +14,8 @@ place.
 On the other hand, I do want MELPA to be setup, and to be using the
 latest org-mode.
 
+** Basic init
+
 #+BEGIN_SRC emacs-lisp
   (progn
     (package-initialize)
@@ -45,14 +47,23 @@ latest org-mode.
     (setq debugger-stack-frame-as-list t))
 
   (setq-default cursor-type 'box)
-  (use-package smex :ensure t)
+#+END_SRC
 
-  (use-package keyfreq :ensure t)
-  (keyfreq-mode 1)
-  (keyfreq-autosave-mode 1)
+** Which computer I am?
 
-  (if (string= (system-name) "TheBeast")
-      (add-to-list 'exec-path "/home/iyan/.local/bin"))
+Find out which computer I'm working at
+
+#+BEGIN_SRC emacs-lisp
+  (cond ((string= (system-name) "TheBeast") (setq system 'best))
+	((string= (system-name) "gate.sscc.uos.ac.kr") (setq system 'gate))
+	(t (setq system 'unknown)))
+
+  (when (eq system 'beast)
+    (setq home-direc "/home/iyan/"))
+  (when (eq system 'gate)
+    (setq home-direc "/home/iwatson/"))
+
+  (add-to-list 'exec-path (concat home-direc "/.local/bin"))
 #+END_SRC
 
 This is maybe not great, by default tramp deals with its connections
@@ -65,7 +76,7 @@ connection. This overwrites the options to ssh so it uses the
 (setq tramp-ssh-controlmaster-options "")
 #+END_SRC
 
-* use-package
+** use-package
 
 Now, we don't need to worry about package-install'ing packages.
 
@@ -123,6 +134,16 @@ If your package needs a directory added to the load-path in order to load, use :
 The :custom keyword allows customization of package custom variables.
 The :custom-face keyword allows customization of package custom faces.
 
+** post-use-package init packages
+
+#+BEGIN_SRC emacs-lisp
+  (use-package smex :ensure t)
+
+  (use-package keyfreq :ensure t)
+  (keyfreq-mode 1)
+  (keyfreq-autosave-mode 1)
+#+END_SRC
+
 * Truth and Beauty: Themes
 
 Some useful variables for changing themes depending on the system:
@@ -177,6 +198,10 @@ example of setting various different fonts.
 #+BEGIN_SRC emacs-lisp
     (use-package rainbow-mode :ensure t)
     (deftheme ians-theme "A theme for Ian")
+    (if (eq system 'beast) (setq code-font "Operator Mono")
+      (setq code-font "DejaVu Sans Mono"))
+    (if (eq system 'beast) (setq vari-font "Operator Mono")
+     (setq vari-font "DejaVu Sans Mono"))
 
     ;; color palette, turn on rainbow mode to see the colors in-buffer
     (let* (
@@ -215,9 +240,8 @@ example of setting various different fonts.
 	   (success-color "#55bb22")
   ;	 (code-font "UbuntuMono Nerd Font")
   ;	 (code-font "Space Mono Nerd Font")
-	   (code-font "Operator Mono")
   ;	   (vari-font "Libre Baskerville")
-	   (vari-font "Operator Mono"))
+          )
       (custom-theme-set-faces
        'ians-theme
 
@@ -276,8 +300,8 @@ example of setting various different fonts.
        `(comint-highlight-prompt ((t (:weight bold :slant normal))))
        `(comint-highlight-input ((t (:weight normal :slant italic))))
        )
-      (set-face-attribute 'variable-pitch nil :family vari-font :height 275)
-      (set-face-attribute 'default nil :family code-font :height 280)
+      (set-face-attribute 'variable-pitch nil :family vari-font :height (if (eq system 'beast) 275 125))
+      (set-face-attribute 'default nil :family code-font :height (if (eq system 'beast) 280 125))
       ;; (set-face-attribute 'tooltip nil :family code-font :height 280)
       ;; (set-face-attribute 'fixed-pitch nil :family code-font)
       ;; (set-face-attribute 'font-lock-comment-face nil :family code-font)
@@ -472,9 +496,10 @@ Some hints:
 * pdf-tools
 
 #+BEGIN_SRC emacs-lisp
+(unless (eq system 'gate)
 (use-package pdf-tools :ensure t
   :config
-  (pdf-tools-install))
+  (pdf-tools-install)))
 #+END_SRC
 
 * Multiple Cursors
@@ -501,7 +526,6 @@ Some hints:
 * Org
 
 #+BEGIN_SRC emacs-lisp
-
   (use-package org
     :bind (("C-c l" . org-store-link)
 	   ("C-c a" . org-agenda)
@@ -510,10 +534,12 @@ Some hints:
 	   :map org-mode-map
 	   ("C-;" . org-toggle-inline-images))
     :config
+    (when (eq system 'beast)
+      (setq
+       org-default-notes-file "~/Dropbox/org/inbox.org"
+       org-agenda-files '("~/Dropbox/org/" "~/Dropbox/2017-korea/org")
+       org-directory "/home/iyan/Dropbox/org"))
     (setq
-     org-default-notes-file "~/Dropbox/org/inbox.org"
-     org-agenda-files '("~/Dropbox/org/" "~/Dropbox/2017-korea/org")
-     org-directory "/home/iyan/Dropbox/org"
      org-latex-images-centered nil
      org-export-use-babel t
      org-confirm-babel-evaluate nil)
@@ -527,13 +553,6 @@ Some hints:
     (setq org-image-actual-width 600)
     (add-hook 'org-mode-hook 'flyspell-mode)
     (add-hook 'org-mode-hook (lambda () (interactive) (setq cursor-type '(bar . 4))))
-
-    (require 'org-bullets)
-    (setq org-bullets-bullet-list
-          '("✽" "✾" "❀" "❁")
-	  ;'("◉" "⦾" "•")
-	  )
-    (add-hook 'org-mode-hook 'org-bullets-mode)
 
     (org-add-link-type
      "color" nil
@@ -555,7 +574,7 @@ Some hints:
        (nim . t)
 					  ;(sh . t)
        (org . t)
-       (hy . t)
+       ;(hy . t)
        (scheme . t)
 					  ;(julia . t)
        (latex . t)))
@@ -571,12 +590,24 @@ Some hints:
     (setq org-src-preserve-indentation nil))
 #+END_SRC
 
+#+BEGIN_SRC emacs-lisp
+    ; wget https://github.com/sabof/org-bullets/raw/master/org-bullets.el
+    (when (eq system 'gate) (add-to-list 'load-path (concat home-direc "dot-files/")))
+    (require 'org-bullets)
+    (setq org-bullets-bullet-list
+          '("✽" "✾" "❀" "❁")
+	  ;'("◉" "⦾" "•")
+	  )
+    (add-hook 'org-mode-hook 'org-bullets-mode)
+#+END_SRC
+
 * Mu4e
 
 #+BEGIN_SRC emacs-lisp
   (require 'secrets)
   (add-to-list 'load-path "~/install/mu/mu4e")
   (use-package mu4e
+    :if (eq system 'beast)
     :bind (("<f12>" . mu4e)
 	   ("C-0" . mu4e))
     :config
@@ -746,11 +777,13 @@ My own personal nonsense to look at ROOT files in emacs and to run
 plotting code. You'll have to have =pymacs= setup first for it to run.
 
 #+BEGIN_SRC emacs-lisp
-(add-to-list 'load-path "/home/iyan/.emacs.d/lisp")
-(require 'pymacs)
-(setq pymacs-load-path '("/Users/mcawesomegary/Dropbox/emacs-root"))
-(add-to-list 'load-path "/Users/mcawesomegary/Dropbox/emacs-root")
-(require 'eroot)
+
+(unless (eq system 'gate)
+ (add-to-list 'load-path "/home/iyan/.emacs.d/lisp")
+ (require 'pymacs)
+ (setq pymacs-load-path '("/Users/mcawesomegary/Dropbox/emacs-root"))
+ (add-to-list 'load-path "/Users/mcawesomegary/Dropbox/emacs-root")
+ (require 'eroot))
 ;; (load "~/.emacs.d/root-mode.el") ;; this was the old version
 #+END_SRC
 
@@ -847,87 +880,91 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
 (ijw-agenda)
 ;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
 ; (load "/home/iyan/.opam/4.06.1/share/emacs/site-lisp/tuareg-site-file")
-(require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
+(when (eq system 'beast) (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el"))
 ;; ## end of OPAM user-setup addition for emacs / base ## keep this line
 #+END_SRC
 
 * exwm
 
+Setup for the laptop only.
 https://github.com/ch11ng/exwm
 
 #+BEGIN_SRC emacs-lisp
-(add-to-list 'load-path "/Users/mcawesomegary/.emacs.d/lisp/xelb")
-(require 'xcb)
-(add-to-list 'load-path "/Users/mcawesomegary/.emacs.d/lisp/exwm")
-(require 'exwm)
-(require 'exwm-config)
-(require 'desktop-environment)
-(desktop-environment-mode)
-
-(setq desktop-environment-brightness-normal-increment "5%+")
-(setq desktop-environment-brightness-normal-decrement "5%-")
-(setq desktop-environment-brightness-small-increment "1%+")
-(setq desktop-environment-brightness-small-decrement "1%-")
-
-(setq display-time-format "%l:%M %p %a %d/%m/%Y")
-(display-time-mode 1)
-(setq battery-mode-line-format " -- %b%p %L")
-(display-battery-mode)
-
-;; this seems to work sometimes?
-(require 'exwm-systemtray)
-(exwm-systemtray-enable)
-
-;; Set the initial workspace number.
-(setq exwm-workspace-number 4)
-;; Make class name the buffer name
-(add-hook 'exwm-update-class-hook
-	  (lambda () (exwm-workspace-rename-buffer exwm-class-name)))
-
-;; commands
-(exwm-input-set-key (kbd "s-p") 'counsel-linux-app)
-(exwm-input-set-key (kbd "s-s") 'ansi-term)
-(exwm-input-set-key (kbd "s-r") #'exwm-reset)
-(exwm-input-set-key (kbd "s-w") #'exwm-workspace-switch)
-(dotimes (i 10)
-  (exwm-input-set-key (kbd (format "s-%d" i))
-                      `(lambda ()
-                         (interactive)
-                         (exwm-workspace-switch-create ,i))))
-;; 's-l': Launch application
-(exwm-input-set-key (kbd "s-l")
-                    (lambda (command)
-                      (interactive (list (read-shell-command "$ ")))
-                      (start-process-shell-command command nil command)))
-;; Line-editing shortcuts
-(setq exwm-input-simulation-keys
-      '(([?\C-b] . [left])
-        ([?\C-f] . [right])
-        ([?\C-p] . [up])
-        ([?\C-n] . [down])
-        ([?\C-a] . [home])
-        ([?\C-e] . [end])
-        ([?\M-v] . [prior])
-        ([?\C-v] . [next])
-        ([?\C-d] . [delete])
-        ([?\C-k] . [S-end delete])))
-;; Enable EXWM
-(exwm-enable)
+  (when (eq system 'beast)
+    (add-to-list 'load-path "/Users/mcawesomegary/.emacs.d/lisp/xelb")
+    (require 'xcb)
+    (add-to-list 'load-path "/Users/mcawesomegary/.emacs.d/lisp/exwm")
+    (require 'exwm)
+    (require 'exwm-config)
+    (require 'desktop-environment)
+    (desktop-environment-mode)
+  
+    (setq desktop-environment-brightness-normal-increment "5%+")
+    (setq desktop-environment-brightness-normal-decrement "5%-")
+    (setq desktop-environment-brightness-small-increment "1%+")
+    (setq desktop-environment-brightness-small-decrement "1%-")
+  
+    (setq display-time-format "%l:%M %p %a %d/%m/%Y")
+    (display-time-mode 1)
+    (setq battery-mode-line-format " -- %b%p %L")
+    (display-battery-mode)
+  
+    ;; this seems to work sometimes?
+    (require 'exwm-systemtray)
+    (exwm-systemtray-enable)
+  
+    ;; Set the initial workspace number.
+    (setq exwm-workspace-number 4)
+    ;; Make class name the buffer name
+    (add-hook 'exwm-update-class-hook
+	      (lambda () (exwm-workspace-rename-buffer exwm-class-name)))
+  
+    ;; commands
+    (exwm-input-set-key (kbd "s-p") 'counsel-linux-app)
+    (exwm-input-set-key (kbd "s-s") 'ansi-term)
+    (exwm-input-set-key (kbd "s-r") #'exwm-reset)
+    (exwm-input-set-key (kbd "s-w") #'exwm-workspace-switch)
+    (dotimes (i 10)
+      (exwm-input-set-key (kbd (format "s-%d" i))
+			  `(lambda ()
+			     (interactive)
+			     (exwm-workspace-switch-create ,i))))
+    ;; 's-l': Launch application
+    (exwm-input-set-key (kbd "s-l")
+			(lambda (command)
+			  (interactive (list (read-shell-command "$ ")))
+			  (start-process-shell-command command nil command)))
+    ;; Line-editing shortcuts
+    (setq exwm-input-simulation-keys
+	  '(([?\C-b] . [left])
+	    ([?\C-f] . [right])
+	    ([?\C-p] . [up])
+	    ([?\C-n] . [down])
+	    ([?\C-a] . [home])
+	    ([?\C-e] . [end])
+	    ([?\M-v] . [prior])
+	    ([?\C-v] . [next])
+	    ([?\C-d] . [delete])
+	    ([?\C-k] . [S-end delete])))
+    ;; Enable EXWM
+    (exwm-enable))
 #+END_SRC
 
 
 Moving around windows:
 
 #+BEGIN_SRC emacs-lisp
-(exwm-input-set-key (kbd "s-<right>") 'windmove-right)
-(exwm-input-set-key (kbd "s-<left>") 'windmove-left)
-(exwm-input-set-key (kbd "s-<up>") 'windmove-up)
-(exwm-input-set-key (kbd "s-<down>") 'windmove-down)
+(when (eq system 'beast)
+ (exwm-input-set-key (kbd "s-<right>") 'windmove-right)
+ (exwm-input-set-key (kbd "s-<left>") 'windmove-left)
+ (exwm-input-set-key (kbd "s-<up>") 'windmove-up)
+ (exwm-input-set-key (kbd "s-<down>") 'windmove-down))
 
-(push (elt (kbd "s-<right>") 0) exwm-input-prefix-keys)
-(push (elt (kbd "s-<left>") 0) exwm-input-prefix-keys)
-(push (elt (kbd "s-<up>") 0) exwm-input-prefix-keys)
-(push (elt (kbd "s-<down>") 0) exwm-input-prefix-keys)
+(when (eq system 'beast)
+ (push (elt (kbd "s-<right>") 0) exwm-input-prefix-keys)
+ (push (elt (kbd "s-<left>") 0) exwm-input-prefix-keys)
+ (push (elt (kbd "s-<up>") 0) exwm-input-prefix-keys)
+ (push (elt (kbd "s-<down>") 0) exwm-input-prefix-keys))
 #+END_SRC
 
 * Keyboardio.el
@@ -967,7 +1004,8 @@ put in your config is =(load-file "~/Dropbox/dot-files/emacs.el")=
 
 #+BEGIN_SRC emacs-lisp
   (defun my/tangle-on-save-emacs-config-org-file ()
-    (when (string= buffer-file-name (file-truename "~/Dropbox/dot-files/emacs.org"))
+    (when (or (string= buffer-file-name (file-truename "~/Dropbox/dot-files/emacs.org"))
+	      (string= buffer-file-name (concat home-direc "dot-files/emacs.org")))
       (org-babel-tangle)))
   (add-hook 'after-save-hook #'my/tangle-on-save-emacs-config-org-file)
 #+END_SRC
