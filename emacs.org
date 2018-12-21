@@ -54,16 +54,29 @@ latest org-mode.
 Find out which computer I'm working at
 
 #+BEGIN_SRC emacs-lisp
-  (cond ((string= (system-name) "TheBeast") (setq system 'best))
+  (cond ((string= (system-name) "TheBeast") (setq system 'beast))
 	((string= (system-name) "gate.sscc.uos.ac.kr") (setq system 'gate))
+	((string= (system-name) "McAwesomes-iMac.local") (setq system 'imac))
 	(t (setq system 'unknown)))
 
   (when (eq system 'beast)
     (setq home-direc "/home/iyan/"))
   (when (eq system 'gate)
     (setq home-direc "/home/iwatson/"))
+  (when (eq system 'imac)
+    (setq home-direc "/Users/mcawesomegary/"))
 
   (add-to-list 'exec-path (concat home-direc "/.local/bin"))
+
+; keyboardio
+  (when (eq system 'imac)
+    (setq mac-option-modifier 'meta)
+    (setq mac-command-modifier 'super))
+
+; mac keyboard
+;  (when (eq system 'imac)
+;    (setq mac-option-modifier 'super)
+;    (setq mac-command-modifier 'meta))
 #+END_SRC
 
 This is maybe not great, by default tramp deals with its connections
@@ -142,8 +155,11 @@ The :custom-face keyword allows customization of package custom faces.
   (use-package keyfreq :ensure t)
   (keyfreq-mode 1)
   (keyfreq-autosave-mode 1)
+  (use-package which-key
+    :ensure t :config
+    (which-key-mode))
 #+END_SRC
-
+  
 * Truth and Beauty: Themes
 
 Some useful variables for changing themes depending on the system:
@@ -184,7 +200,10 @@ Centers the text of a buffer and restricts the line-width. Nice for org
     :ensure t
     :after (org)
     :hook ((org-mode . olivetti-mode)
-	   (org-mode . (lambda () (interactive) (setq olivetti-body-width 85))))
+	   (org-mode . (lambda () (interactive)
+			 (when (eq system 'imac)
+			   (setq olivetti-body-width 120)
+			 (setq olivetti-body-width 85)))))
     :config)
 #+END_SRC
 
@@ -198,10 +217,13 @@ example of setting various different fonts.
 #+BEGIN_SRC emacs-lisp
     (use-package rainbow-mode :ensure t)
     (deftheme ians-theme "A theme for Ian")
-    (if (eq system 'beast) (setq code-font "Operator Mono")
-      (setq code-font "DejaVu Sans Mono"))
-    (if (eq system 'beast) (setq vari-font "Operator Mono")
-     (setq vari-font "DejaVu Sans Mono"))
+    (cond ((eq system 'beast) (setq code-font "Operator Mono") (setq code-font-size 280))
+	  ((eq system 'imac) (setq code-font "Monaco") (setq code-font-size 200))
+	  (t (setq code-font "DejaVu Sans Mono") (setq code-font-size 125)))
+    (cond
+     ((eq system 'beast) (setq vari-font "Operator Mono") (setq vari-font-size 280))
+     ((eq system 'imac) (setq vari-font "Monaco") (setq vari-font-size 200))
+     (t (setq vari-font "DejaVu Sans Mono") (setq vari-font-size 125)))
 
     ;; color palette, turn on rainbow mode to see the colors in-buffer
     (let* (
@@ -224,12 +246,12 @@ example of setting various different fonts.
 	   ;(bg-color-dark "#000055")
 	   ;(bg-color-very-dark "#000022")
 
-	   (bg-color "#ddefdd")
+	   (bg-color (if (eq system 'imac) "#a1cfa1" "#ddefdd"))
 	   (bg-color-dark "#ccd7cc")
 	   (bg-color-very-dark "#779777")
-	   (bg-color-light "#e5f5e5")
-	   (fg-color "#222266")
-	   (fg-color-light "#444488")
+	   (bg-color-light (if (eq system 'imac) "#bfe3bf" "#e5f5e5"))
+	   (fg-color (if (eq system 'imac) "#111166" "#222266"))
+	   (fg-color-light (if (eq system 'imac) "#222266" "#444488"))
 	   (fg-color-dark "#000055")
 	   (fg-color-very-dark "#000022")
 
@@ -238,9 +260,6 @@ example of setting various different fonts.
 	   (contrast-color "#992222")
 	   (highlight-color "#447799")
 	   (success-color "#55bb22")
-  ;	 (code-font "UbuntuMono Nerd Font")
-  ;	 (code-font "Space Mono Nerd Font")
-  ;	   (vari-font "Libre Baskerville")
           )
       (custom-theme-set-faces
        'ians-theme
@@ -299,9 +318,12 @@ example of setting various different fonts.
        ;; comint
        `(comint-highlight-prompt ((t (:weight bold :slant normal))))
        `(comint-highlight-input ((t (:weight normal :slant italic))))
+
+      ;; dired
+        `(dired-directory ((t (:foreground ,contrast-color))))
        )
-      (set-face-attribute 'variable-pitch nil :family vari-font :height (if (eq system 'beast) 275 125))
-      (set-face-attribute 'default nil :family code-font :height (if (eq system 'beast) 280 125))
+      (set-face-attribute 'variable-pitch nil :family vari-font :height vari-font-size)
+      (set-face-attribute 'default nil :family code-font :height code-font-size) 
       ;; (set-face-attribute 'tooltip nil :family code-font :height 280)
       ;; (set-face-attribute 'fixed-pitch nil :family code-font)
       ;; (set-face-attribute 'font-lock-comment-face nil :family code-font)
@@ -404,7 +426,9 @@ The king of all git viewers.
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t
     :bind (("C-x g" . magit-status))
-    :config)
+    :config
+    ;; Using github, etc from magit
+    (use-package forge :ensure t))
 #+END_SRC
 
 * Ivy
@@ -478,6 +502,9 @@ Some hints:
 
 #+BEGIN_SRC emacs-lisp
 (use-package avy :ensure t
+  :bind
+  ("<XF86Tools>" . avy-goto-char)
+  ("<f13>" . avy-goto-char)
   :config
   (use-package key-chord :ensure t)
   (use-package ace-window :ensure t)
@@ -497,9 +524,9 @@ Some hints:
 
 #+BEGIN_SRC emacs-lisp
 (unless (eq system 'gate)
-(use-package pdf-tools :ensure t
-  :config
-  (pdf-tools-install)))
+  (use-package pdf-tools :ensure t
+    :config
+    (pdf-tools-install)))
 #+END_SRC
 
 * Multiple Cursors
@@ -515,84 +542,91 @@ Some hints:
 * geiser: scheme
 
 #+BEGIN_SRC emacs-lisp
-    (use-package geiser
-      ;; :bind (:map geiser-mode-map
-      ;; 		("C-<tab>" . company-complete))
-      :config
-      (setq geiser-active-implementations '(guile chicken)))
-  
+  (use-package geiser :ensure t
+    ;; :bind (:map geiser-mode-map
+    ;; 		("C-<tab>" . company-complete))
+    :config
+    (setq geiser-active-implementations '(guile chicken)))
+
+  ; (setq geiser-active-implementations '(pyscm guile chicken))
 #+END_SRC
 
 * Org
 
 #+BEGIN_SRC emacs-lisp
-  (use-package org
-    :bind (("C-c l" . org-store-link)
-	   ("C-c a" . org-agenda)
-	   ("C-c c" . org-capture)
-	   ("C-c b" . org-iswitchb)
-	   :map org-mode-map
-	   ("C-;" . org-toggle-inline-images))
-    :config
-    (when (eq system 'beast)
+    (use-package org
+      :bind (("C-c l" . org-store-link)
+	     ("C-c a" . org-agenda)
+	     ("C-c t" . org-capture)
+	     ("C-c b" . org-iswitchb)
+	     :map org-mode-map
+	     ("C-;" . org-toggle-inline-images)
+	     ("C-c e" . org-export-dispatch)
+	     ("C-c p" . org-beamer-export-to-pdf))
+      :init ;; minor modes get preference when searching bindings, get rid of some we don't want
+      (unbind-key "C-;" flyspell-mode-map)
+      :config
+      (unless (eq system 'gate)
+	(setq
+	 org-default-notes-file "~/Dropbox/org/inbox.org"
+	 org-agenda-files '("~/Dropbox/org/" "~/Dropbox/2017-korea/org")
+	 org-directory "/home/iyan/Dropbox/org"))
       (setq
-       org-default-notes-file "~/Dropbox/org/inbox.org"
-       org-agenda-files '("~/Dropbox/org/" "~/Dropbox/2017-korea/org")
-       org-directory "/home/iyan/Dropbox/org"))
-    (setq
-     org-latex-images-centered nil
-     org-export-use-babel t
-     org-confirm-babel-evaluate nil)
+       org-latex-images-centered nil
+       org-export-use-babel t
+       org-confirm-babel-evaluate nil
+       org-support-shift-select t)
 
-    (require 'ox-beamer)
-    (setq org-latex-images-centered nil)
+      (require 'ox-beamer)
+      (setq org-latex-images-centered nil)
 
-    (add-to-list 'image-type-file-name-regexps '("\\.pdf\\'" . imagemagick))
-    (add-to-list 'image-file-name-extensions "pdf")
-    (setq imagemagick-types-inhibit (remove 'PDF imagemagick-types-inhibit))
-    (setq org-image-actual-width 600)
-    (add-hook 'org-mode-hook 'flyspell-mode)
-    (add-hook 'org-mode-hook (lambda () (interactive) (setq cursor-type '(bar . 4))))
+      (add-to-list 'image-type-file-name-regexps '("\\.pdf\\'" . imagemagick))
+      (add-to-list 'image-file-name-extensions "pdf")
+      (setq imagemagick-types-inhibit (remove 'PDF imagemagick-types-inhibit))
+      (setq org-image-actual-width 600)
+      (add-hook 'org-mode-hook 'flyspell-mode)
+  ;    (add-hook 'org-mode-hook (lambda () (interactive) (setq cursor-type '(bar . 4))))
 
-    (org-add-link-type
-     "color" nil
-     (lambda (path desc format)
-       (cond
-	((eq format 'html)
-	 (format "<span style=\"color:%s;\">%s</span>" path desc))
-	((eq format 'latex)
-	 (format "{\\color{%s}%s}" path desc)))))
+      (org-add-link-type
+       "color" nil
+       (lambda (path desc format)
+	 (cond
+	  ((eq format 'html)
+	   (format "<span style=\"color:%s;\">%s</span>" path desc))
+	  ((eq format 'latex)
+	   (format "{\\color{%s}%s}" path desc)))))
 
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((emacs-lisp . t)
-       (python . t)
-       (ditaa . t)
-       (dot . t)
-       (plantuml . t)
-       (gnuplot . t)
-       (nim . t)
-					  ;(sh . t)
-       (org . t)
-       ;(hy . t)
-       (scheme . t)
-					  ;(julia . t)
-       (latex . t)))
+      (org-babel-do-load-languages
+       'org-babel-load-languages
+       '((emacs-lisp . t)
+	 (python . t)
+	 (ditaa . t)
+	 (dot . t)
+	 (plantuml . t)
+	 (gnuplot . t)
+	 ;; (nim . t)
+					    ;(sh . t)
+	 (org . t)
+	 ;(hy . t)
+	 (scheme . t)
+					    ;(julia . t)
+	 (latex . t)))
 
-    (add-to-list 'org-structure-template-alist
-		 `("r" ,(concat "#+BEGIN_SRC python :session root :results file :exports results\n"
-				"?\n"
-				"#+END_SRC\n"
-				"#+ATTR_LATEX: :width 0.4\\textwidth\n"
-				"#+RESULTS:\n[[file:]]\n")))
+      (add-to-list 'org-structure-template-alist
+		   `("r" ,(concat "#+BEGIN_SRC python :session root :results file :exports results\n"
+				  "?\n"
+				  "#+END_SRC\n"
+				  "#+ATTR_LATEX: :width 0.4\\textwidth\n"
+				  "#+RESULTS:\n[[file:]]\n")))
 
-    (use-package deft :ensure t)
-    (setq org-src-preserve-indentation nil))
+      (use-package deft :ensure t)
+      (setq org-src-preserve-indentation nil))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
     ; wget https://github.com/sabof/org-bullets/raw/master/org-bullets.el
     (when (eq system 'gate) (add-to-list 'load-path (concat home-direc "dot-files/")))
+    (when (eq system 'imac) (add-to-list 'load-path (concat home-direc "Dropbox/dot-files/")))
     (require 'org-bullets)
     (setq org-bullets-bullet-list
           '("✽" "✾" "❀" "❁")
@@ -601,10 +635,14 @@ Some hints:
     (add-hook 'org-mode-hook 'org-bullets-mode)
 #+END_SRC
 
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package poly-org :ensure t)
+#+END_SRC
+
 * Mu4e
 
 #+BEGIN_SRC emacs-lisp
-  (require 'secrets)
+  (unless (eq system 'imac) (require 'secrets))
   (add-to-list 'load-path "~/install/mu/mu4e")
   (use-package mu4e
     :if (eq system 'beast)
@@ -712,16 +750,21 @@ for python, it uses [[https://github.com/palantir/python-language-server][=pyls=
 https://github.com/joaotavora/eglot
 
 #+BEGIN_SRC emacs-lisp
-(use-package eglot :ensure t
-  :config
-  (add-hook 'python-mode-hook (lambda ()
-			     (interactive)
-			     (local-set-key (kbd "M-n") #'flymake-goto-next-error)
-			     (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))
-  (add-hook 'c++-mode-hook (lambda ()
-			     (interactive)
-			     (local-set-key (kbd "M-n") #'flymake-goto-next-error)
-			     (local-set-key (kbd "M-p") #'flymake-goto-prev-error))))
+(unless (eq system 'imac)
+  (use-package eglot :ensure t
+    :config
+    (add-hook 'python-mode-hook (lambda ()
+				  (interactive)
+				  (local-set-key (kbd "M-n") #'flymake-goto-next-error)
+				  (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))
+    (add-hook 'c++-mode-hook (lambda ()
+			       (interactive)
+			       (local-set-key (kbd "M-n") #'flymake-goto-next-error)
+			       (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))))
+
+(when (eq system 'imac)
+  (setq python-shell-interpreter "python3")
+  (setenv "PYTHONPATH" ":~/install/root/build_root7/lib:"))
 #+END_SRC
 
 ** OLD irony
@@ -759,7 +802,7 @@ https://github.com/joaotavora/eglot
 #+BEGIN_SRC 
 (add-hook 'emacs-lisp-mode-hook (lambda ()
 				  (company-mode 1)
-				  (local-set-key (kbd "C-<tab>") 'company-complete))) 
+				  (local-set-key (kbd "C-<tab>") 'company-complete)))
 #+END_SRC
 
 lispy, maybe with the new keyboard paredit will end up better?
@@ -779,11 +822,12 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
 #+BEGIN_SRC emacs-lisp
 
 (unless (eq system 'gate)
- (add-to-list 'load-path "/home/iyan/.emacs.d/lisp")
+ (add-to-list 'load-path (concat home-direc ".emacs.d/lisp"))
  (require 'pymacs)
  (setq pymacs-load-path '("/Users/mcawesomegary/Dropbox/emacs-root"))
+ (add-to-list 'pymacs-load-path "/Users/mcawesomegary/install/root/build_root7/lib")
  (add-to-list 'load-path "/Users/mcawesomegary/Dropbox/emacs-root")
- (require 'eroot))
+ (unless (eq system 'gate) (require 'eroot)))
 ;; (load "~/.emacs.d/root-mode.el") ;; this was the old version
 #+END_SRC
 
@@ -877,7 +921,7 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
   (org-agenda-list)
   (org-todo-list))
 (global-set-key (kbd "<f10>") 'ijw-agenda)
-(ijw-agenda)
+(when (eq system 'beast) (ijw-agenda))
 ;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
 ; (load "/home/iyan/.opam/4.06.1/share/emacs/site-lisp/tuareg-site-file")
 (when (eq system 'beast) (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el"))
@@ -974,8 +1018,10 @@ https://github.com/algernon/kaleidoscope.el
 (note the firmware setup guide is outdated)
 
 #+BEGIN_SRC emacs-lisp
+(when (eq system 'imac) (add-to-list 'load-path "/Users/mcawesomegary/Documents/Arduino/Model01-Firmware/kaleidoscope.el/"))
+
 (use-package kaleidoscope
-  :load-path "/home/iyan/Arduino/Model01-Firmware/kaleidoscope.el/"
+  :load-path "/Users/mcawesomegary/Arduino/Model01-Firmware/kaleidoscope.el/"
   :config)
 
 #+END_SRC
@@ -983,19 +1029,58 @@ https://github.com/algernon/kaleidoscope.el
 A hook for compilation, basically stolen from kaleidoscope-evil-state-flash.
 
 #+BEGIN_SRC emacs-lisp
-  (defun ijw/on-compile-done (buffer msg)
-    (if (string-match "^finish" msg)	; (setq msg "abc")
-	(kaleidoscope-send-command :let/setAll (kaleidoscope-color-to-rgb "#FF0000"))
-      (kaleidoscope-send-command :let/setAll (kaleidoscope-color-to-rgb "#00ff00")))
-    (run-at-time "1" nil (kaleidoscope-send-command :let/setAll (kaleidoscope-color-to-rgb "#00ff00"))))
+    (defun ijw/on-compile-done (buffer msg)
+      (if (string-match "^finish" msg)	; (setq msg "abc")
+	  (kaleidoscope-send-command :led/setAll (kaleidoscope-color-to-rgb "#00FF00"))
+	(kaleidoscope-send-command :led/setAll (kaleidoscope-color-to-rgb "#ff0000")))
+      (run-at-time "1" nil (lambda () (kaleidoscope-send-command :led/setAll (kaleidoscope-color-to-rgb "#000000")))))
 
-(defun ijw/kaleidoscope-setup ()
-  (interactive)
-  (add-hook 'compilation-finish-functions 'ijw/on-compile-done))
-(defun ijw/kaleidoscope-teardown ()
-  (interactive)
-  (remove-hook 'compilation-finish-functions 'ijw/on-compile-done))
+  (defun ijw/kaleidoscope-setup ()
+    (interactive)
+    (kaleidoscope-start)
+    (add-hook 'compilation-finish-functions 'ijw/on-compile-done))
+  (defun ijw/kaleidoscope-teardown ()
+    (interactive)
+    (kaleidoscope-quit)
+    (remove-hook 'compilation-finish-functions 'ijw/on-compile-done))
 #+END_SRC
+
+* global key bindings, particularly for keyboardio
+
+  #+BEGIN_SRC emacs-lisp
+  (global-set-key (kbd "C-x f") 'counsel-find-file)
+  (global-set-key (kbd "C-x s") 'save-buffer)
+  (global-set-key (kbd "C-c c") 'compile)
+  (global-set-key (kbd "C-x d") 'dired-jump)
+  (global-set-key (kbd "C-x C-d") 'dired)
+  (global-set-key (kbd "<home>") 'company-complete)
+
+  ;; the following are mapped to prefix layers on backspace and space
+  ;; respectively. They're suppose to do the deletion/whitespace
+  ;; equivalent of the vim "hjkl" movement commands (shifted by 1 key
+  ;; so we can stay on the home position)
+  (bind-keys :map global-map
+	     :prefix-map deletion-key-map
+	     :prefix "M-s-d"
+	     ("j" . backward-delete-char-untabify)
+	     (";" . delete-forward-char)
+	     ("k" . kill-visual-line)
+  	     ("l" . (lambda () (interactive) (kill-visual-line 0)))
+	     ("h" . undo)
+	     ("i" . backward-kill-word)
+	     ("o" . kill-word)
+	     )
+
+  (bind-keys :map global-map
+	     :prefix-map whitespace-key-map
+	     :prefix "M-s-w"
+	     ("j" . (lambda () (interactive) (insert " ") (left-char)))
+	     (";" . (lambda () (interactive) (insert " ")))
+	     ("k" . newline)
+  	     ("l" . open-line)
+	     ("h" . undo))
+  #+END_SRC
+(read-key)
 
 * Postscript: Setting up This File
 
@@ -1012,3 +1097,11 @@ put in your config is =(load-file "~/Dropbox/dot-files/emacs.el")=
 
 Maybe also add =(custom-set-variables)= above it so that the theme
 code can be added before the load.
+
+* Fullscreen
+
+#+BEGIN_SRC emacs-lisp
+(when (eq system 'imac)
+  (toggle-frame-fullscreen))
+#+END_SRC
+
