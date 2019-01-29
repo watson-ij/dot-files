@@ -56,6 +56,7 @@ Find out which computer I'm working at
 #+BEGIN_SRC emacs-lisp
   (cond ((string= (system-name) "TheBeast") (setq system 'beast))
 	((string= (system-name) "gate.sscc.uos.ac.kr") (setq system 'gate))
+	((string= (system-name) "ui10.sdfarm.kr") (setq system 'kisti1))
 	((string= (system-name) "McAwesomes-iMac.local") (setq system 'imac))
 	(t (setq system 'unknown)))
 
@@ -63,6 +64,9 @@ Find out which computer I'm working at
     (setq home-direc "/home/iyan/"))
   (when (eq system 'gate)
     (setq home-direc "/home/iwatson/"))
+  (when (eq system 'kisti1)
+    (setq home-direc "/cms/ldap_home/iawatson/"))
+
   (when (eq system 'imac)
     (setq home-direc "/Users/mcawesomegary/"))
 
@@ -77,6 +81,9 @@ Find out which computer I'm working at
 ;  (when (eq system 'imac)
 ;    (setq mac-option-modifier 'super)
 ;    (setq mac-command-modifier 'meta))
+
+; may need this when connecting over mac to kisti/gate
+;     (setq x-alt-keysym 'meta)
 #+END_SRC
 
 This is maybe not great, by default tramp deals with its connections
@@ -564,6 +571,7 @@ Some hints:
 	     ("C-c e" . org-export-dispatch)
 	     ("C-c p" . org-beamer-export-to-pdf))
       :init ;; minor modes get preference when searching bindings, get rid of some we don't want
+      (require 'flyspell)
       (unbind-key "C-;" flyspell-mode-map)
       :config
       (unless (eq system 'gate)
@@ -625,7 +633,7 @@ Some hints:
 
 #+BEGIN_SRC emacs-lisp
     ; wget https://github.com/sabof/org-bullets/raw/master/org-bullets.el
-    (when (eq system 'gate) (add-to-list 'load-path (concat home-direc "dot-files/")))
+    (when (member system '(gate kisti1)) (add-to-list 'load-path (concat home-direc "dot-files/")))
     (when (eq system 'imac) (add-to-list 'load-path (concat home-direc "Dropbox/dot-files/")))
     (require 'org-bullets)
     (setq org-bullets-bullet-list
