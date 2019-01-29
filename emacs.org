@@ -58,9 +58,12 @@ Find out which computer I'm working at
 	((string= (system-name) "gate.sscc.uos.ac.kr") (setq system 'gate))
 	((string= (system-name) "ui10.sdfarm.kr") (setq system 'kisti1))
 	((string= (system-name) "McAwesomes-iMac.local") (setq system 'imac))
+	((string= (system-name) "BeastMaster") (setq system 'beastmaster))
 	(t (setq system 'unknown)))
 
   (when (eq system 'beast)
+    (setq home-direc "/home/iyan/"))
+  (when (eq system 'beastmaster)
     (setq home-direc "/home/iyan/"))
   (when (eq system 'gate)
     (setq home-direc "/home/iwatson/"))
@@ -159,9 +162,9 @@ The :custom-face keyword allows customization of package custom faces.
 #+BEGIN_SRC emacs-lisp
   (use-package smex :ensure t)
 
-  (use-package keyfreq :ensure t)
-  (keyfreq-mode 1)
-  (keyfreq-autosave-mode 1)
+  ;; (use-package keyfreq :ensure t)
+  ;; (keyfreq-mode 1)
+  ;; (keyfreq-autosave-mode 1)
   (use-package which-key
     :ensure t :config
     (which-key-mode))
@@ -202,7 +205,7 @@ interesting fonts. I particularly like the slanty comments.
 
 Centers the text of a buffer and restricts the line-width. Nice for org
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package olivetti
     :ensure t
     :after (org)
@@ -224,12 +227,18 @@ example of setting various different fonts.
 #+BEGIN_SRC emacs-lisp
     (use-package rainbow-mode :ensure t)
     (deftheme ians-theme "A theme for Ian")
-    (cond ((eq system 'beast) (setq code-font "Operator Mono") (setq code-font-size 280))
-	  ((eq system 'imac) (setq code-font "Monaco") (setq code-font-size 200))
-	  (t (setq code-font "DejaVu Sans Mono") (setq code-font-size 125)))
+    (cond 
+     ((eq system 'beast) (setq code-font "Fantasque Sans Mono") (setq code-font-size 280))
+     ((eq system 'beast) (setq code-font "Operator Mono") (setq code-font-size 280))
+     ((eq system 'imac) (setq code-font "Monaco") (setq code-font-size 200))
+     ((eq system 'beastmaster) (setq code-font "Hack") (setq code-font-size 150))
+     (t (setq code-font "DejaVu Sans Mono") (setq code-font-size 125)))
+
     (cond
+     ((eq system 'beast) (setq vari-font "Fantasque Sans Mono") (setq vari-font-size 280))
      ((eq system 'beast) (setq vari-font "Operator Mono") (setq vari-font-size 280))
      ((eq system 'imac) (setq vari-font "Monaco") (setq vari-font-size 200))
+     ((eq system 'beastmaster) (setq vari-font "Hack") (setq vari-font-size 150))
      (t (setq vari-font "DejaVu Sans Mono") (setq vari-font-size 125)))
 
     ;; color palette, turn on rainbow mode to see the colors in-buffer
@@ -253,21 +262,30 @@ example of setting various different fonts.
 	   ;(bg-color-dark "#000055")
 	   ;(bg-color-very-dark "#000022")
 
-	   (bg-color (if (eq system 'imac) "#a1cfa1" "#ddefdd"))
-	   (bg-color-dark "#ccd7cc")
-	   (bg-color-very-dark "#779777")
-	   (bg-color-light (if (eq system 'imac) "#bfe3bf" "#e5f5e5"))
-	   (fg-color (if (eq system 'imac) "#111166" "#222266"))
+	   ;; (bg-color (if (eq system 'imac) "#a1cfa1" "#ddefdd"))
+	   ;; (bg-color-dark "#ccd7cc")
+	   ;; (bg-color-very-dark "#779777")
+	   ;; (bg-color-light (if (eq system 'imac) "#bfe3bf" "#e5f5e5"))
+	   ;; (fg-color (if (eq system 'imac) "#111166" "#222266"))
+	   ;; (fg-color-light (if (eq system 'imac) "#222266" "#444488"))
+	   ;; (fg-color-dark "#000055")
+	   ;; (fg-color-very-dark "#000022")
+
+	   (bg-color (if (eq system 'imac) "#a1a1a1" "#c4c4c4"))
+	   (bg-color-dark "#cccccc")
+	   (bg-color-very-dark "#777777")
+	   (bg-color-light (if (eq system 'imac) "#bfbfbf" "#d5d5d5"))
+	   (fg-color (if (eq system 'imac) "#111166" "#121266"))
 	   (fg-color-light (if (eq system 'imac) "#222266" "#444488"))
-	   (fg-color-dark "#000055")
+	   (fg-color-dark "#000044")
 	   (fg-color-very-dark "#000022")
 
 	   (verb-color "#888860")
-	   (mid-color "#777760")
+	   (mid-color "#4f7f30")
 	   (contrast-color "#992222")
 	   (highlight-color "#447799")
 	   (success-color "#55bb22")
-          )
+	  )
       (custom-theme-set-faces
        'ians-theme
 
@@ -300,7 +318,7 @@ example of setting various different fonts.
        ;; `(font-lock-constant-face ((t (:foreground ,zenburn-green+4))))
        `(font-lock-doc-face ((t (:foreground ,fg-color-light))))
        `(font-lock-function-name-face ((t (:foreground ,fg-color-dark))))
-       `(font-lock-keyword-face ((t (:foreground ,fg-color :weight normal))))
+       `(font-lock-keyword-face ((t (:foreground ,mid-color :weight normal))))
        ;; `(font-lock-negation-char-face ((t (:foreground ,zenburn-yellow :weight bold))))
        ;; `(font-lock-preprocessor-face ((t (:foreground ,zenburn-blue+1))))
        ;; `(font-lock-regexp-grouping-construct ((t (:foreground ,zenburn-yellow :weight bold))))
@@ -327,7 +345,7 @@ example of setting various different fonts.
        `(comint-highlight-input ((t (:weight normal :slant italic))))
 
       ;; dired
-        `(dired-directory ((t (:foreground ,contrast-color))))
+	`(dired-directory ((t (:foreground ,contrast-color))))
        )
       (set-face-attribute 'variable-pitch nil :family vari-font :height vari-font-size)
       (set-face-attribute 'default nil :family code-font :height code-font-size) 
@@ -569,6 +587,10 @@ Some hints:
 	     :map org-mode-map
 	     ("C-;" . org-toggle-inline-images)
 	     ("C-c e" . org-export-dispatch)
+	     ("C-c C-x a" . org-archive-subtree-default)
+	     ("C-c C-x C-a" . org-toggle-archive-tag)
+	     ("C-c C-x t" . org-todo)
+
 	     ("C-c p" . org-beamer-export-to-pdf))
       :init ;; minor modes get preference when searching bindings, get rid of some we don't want
       (require 'flyspell)
@@ -584,6 +606,9 @@ Some hints:
        org-export-use-babel t
        org-confirm-babel-evaluate nil
        org-support-shift-select t)
+
+      ; override default emacs behaviour on mac
+      (add-to-list 'org-file-apps '(directory . emacs))
 
       (require 'ox-beamer)
       (setq org-latex-images-centered nil)
@@ -604,10 +629,12 @@ Some hints:
 	  ((eq format 'latex)
 	   (format "{\\color{%s}%s}" path desc)))))
 
+      (use-package ob-ipython :ensure t)
       (org-babel-do-load-languages
        'org-babel-load-languages
        '((emacs-lisp . t)
 	 (python . t)
+	 (ipython . t)
 	 (ditaa . t)
 	 (dot . t)
 	 (plantuml . t)
@@ -635,6 +662,7 @@ Some hints:
     ; wget https://github.com/sabof/org-bullets/raw/master/org-bullets.el
     (when (member system '(gate kisti1)) (add-to-list 'load-path (concat home-direc "dot-files/")))
     (when (eq system 'imac) (add-to-list 'load-path (concat home-direc "Dropbox/dot-files/")))
+    (when (eq system 'beastmaster) (add-to-list 'load-path (concat home-direc "Dropbox/dot-files/")))
     (require 'org-bullets)
     (setq org-bullets-bullet-list
           '("✽" "✾" "❀" "❁")
@@ -657,6 +685,7 @@ Some hints:
     :bind (("<f12>" . mu4e)
 	   ("C-0" . mu4e))
     :config
+    (require 'org-mu4e)
     (require 'smtpmail)
     (setq
      mu4e-mu-binary "~/install/mu/mu/mu"
@@ -775,6 +804,12 @@ https://github.com/joaotavora/eglot
   (setenv "PYTHONPATH" ":~/install/root/build_root7/lib:"))
 #+END_SRC
 
+** RMSBolt
+
+#+BEGIN_SRC emacs-lisp
+(use-package rmsbolt :ensure t)
+#+END_SRC
+
 ** OLD irony
 
 #+BEGIN_SRC emacs-lisp :tangle no
@@ -829,7 +864,7 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
 
 #+BEGIN_SRC emacs-lisp
 
-(unless (eq system 'gate)
+(unless (or (eq system 'gate) (eq system 'imac) (eq system 'beastmaster))
  (add-to-list 'load-path (concat home-direc ".emacs.d/lisp"))
  (require 'pymacs)
  (setq pymacs-load-path '("/Users/mcawesomegary/Dropbox/emacs-root"))
@@ -1028,9 +1063,10 @@ https://github.com/algernon/kaleidoscope.el
 #+BEGIN_SRC emacs-lisp
 (when (eq system 'imac) (add-to-list 'load-path "/Users/mcawesomegary/Documents/Arduino/Model01-Firmware/kaleidoscope.el/"))
 
-(use-package kaleidoscope
+(if (or (eq system 'imac) (eq system 'beast))
+ (use-package kaleidoscope
   :load-path "/Users/mcawesomegary/Arduino/Model01-Firmware/kaleidoscope.el/"
-  :config)
+  :config))
 
 #+END_SRC
 
@@ -1062,6 +1098,9 @@ A hook for compilation, basically stolen from kaleidoscope-evil-state-flash.
   (global-set-key (kbd "C-x d") 'dired-jump)
   (global-set-key (kbd "C-x C-d") 'dired)
   (global-set-key (kbd "<home>") 'company-complete)
+  (use-package expand-region :ensure t)
+  (global-set-key (kbd "C-=") 'er/expand-region)
+  (global-set-key (kbd "M-s-e") 'eval-region)
 
   ;; the following are mapped to prefix layers on backspace and space
   ;; respectively. They're suppose to do the deletion/whitespace
@@ -1075,8 +1114,11 @@ A hook for compilation, basically stolen from kaleidoscope-evil-state-flash.
 	     ("k" . kill-visual-line)
   	     ("l" . (lambda () (interactive) (kill-visual-line 0)))
 	     ("h" . undo)
+	     ;; this should really be kill paragraph
 	     ("i" . backward-kill-word)
 	     ("o" . kill-word)
+	     ("u" . backward-kill-word)
+	     ("p" . kill-word)
 	     )
 
   (bind-keys :map global-map
