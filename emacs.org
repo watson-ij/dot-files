@@ -564,6 +564,16 @@ Some hints:
   (setq mc/list-file "~/.emacs.d/.mc-lists.el"))
 #+END_SRC
 
+* Shell
+
+#+BEGIN_SRC emacs-lisp
+(use-package shx :ensure t :config
+  (shx-global-mode 1)
+  (defun shx-cmd-git (_args)
+    "(SAFE) Open magit in the current directory"
+    (magit-status-internal default-directory)))
+#+END_SRC
+
 * geiser: scheme
 
 #+BEGIN_SRC emacs-lisp
