@@ -49,6 +49,9 @@ latest org-mode.
   (setq-default cursor-type 'box)
 #+END_SRC
 
+#+RESULTS:
+: box
+
 ** Which computer I am?
 
 Find out which computer I'm working at
@@ -284,7 +287,7 @@ example of setting various different fonts.
 	   (mid-color "#4f7f30")
 	   (contrast-color "#992222")
 	   (highlight-color "#447799")
-	   (success-color "#55bb22")
+	   (success-color "#40a010")
 	  )
       (custom-theme-set-faces
        'ians-theme
@@ -357,6 +360,10 @@ example of setting various different fonts.
 
       )
 
+      (setq ansi-color-names-vector
+        ["black" "red3" "green3" "yellow3" "blue2" "magenta3" "cyan3" "gray90"])
+
+
   (add-hook 'text-mode-hook
 	    (lambda ()
 	      (variable-pitch-mode 1)))
@@ -367,6 +374,9 @@ example of setting various different fonts.
 
   (provide-theme 'ians-theme)
 #+END_SRC
+
+#+RESULTS:
+: ians-theme-theme
 
 #+BEGIN_SRC emacs-lisp
   ;; (add-to-list 'custom-theme-load-path "/home/iyan/Dropbox/dot-files")
@@ -384,6 +394,14 @@ Some helper functions
 
 Resources:
 - http://emacsfodder.github.io/blog/notes-on-deftheme/
+
+#+BEGIN_SRC emacs-lisp
+
+(add-to-list 'initial-frame-alist '(alpha . (95 . 75)))
+(add-to-list 'default-frame-alist '(alpha . (95 . 75)))
+(set-frame-parameter nil 'alpha '(95 . 75))
+
+#+END_SRC
 
 ** Buffer face mode testing
 
@@ -516,7 +534,7 @@ Some hints:
   (use-package ivy-rich
     :ensure t
     :config
-    (ivy-rich-mode 1)
+    (ivy-rich-mode 0)
     (setq
      ivy-virtual-abbreviate 'full
      ivy-rich-switch-buffer-align-virtual-buffer t
@@ -665,7 +683,10 @@ Some hints:
 				  "#+RESULTS:\n[[file:]]\n")))
 
       (use-package deft :ensure t)
-      (setq org-src-preserve-indentation nil))
+      ; turn off org-mode trying to do things with indents
+      (setq org-src-preserve-indentation t
+        org-edit-src-content-indentation 0)
+	)
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -797,21 +818,78 @@ for python, it uses [[https://github.com/palantir/python-language-server][=pyls=
 https://github.com/joaotavora/eglot
 
 #+BEGIN_SRC emacs-lisp
-(unless (eq system 'imac)
-  (use-package eglot :ensure t
-    :config
-    (add-hook 'python-mode-hook (lambda ()
-				  (interactive)
-				  (local-set-key (kbd "M-n") #'flymake-goto-next-error)
-				  (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))
-    (add-hook 'c++-mode-hook (lambda ()
-			       (interactive)
-			       (local-set-key (kbd "M-n") #'flymake-goto-next-error)
-			       (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))))
+      (use-package eglot :ensure t
+	:config
+	; https://github.com/hansec/fortran-language-server
+	(add-to-list 'eglot-server-programs '(fortran-mode . ("fortls")))
+	(add-hook 'python-mode-hook (lambda ()
+				      (interactive)
+				      (local-set-key (kbd "M-n") #'flymake-goto-next-error)
+				      (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))
+	(add-hook 'fortran-mode-hook (lambda ()
+				      (interactive)
+				      (local-set-key (kbd "M-n") #'flymake-goto-next-error)
+				      (local-set-key (kbd "M-p") #'flymake-goto-prev-error)))
+	(add-hook 'c++-mode-hook (lambda ()
+				   (interactive)
+				   (local-set-key (kbd "M-n") #'flymake-goto-next-error)
+				   (local-set-key (kbd "M-p") #'flymake-goto-prev-error))))
 
-(when (eq system 'imac)
-  (setq python-shell-interpreter "python3")
-  (setenv "PYTHONPATH" ":~/install/root/build_root7/lib:"))
+    (when (eq system 'imac)
+      (setq python-shell-interpreter "python3")
+      (setenv "PYTHONPATH" ":~/install/root/build_root7/lib:")
+      ; run with C-c C-v
+      (setq python-check-command "/Users/mcawesomegary/Library/Python/3.7/bin/pytest")
+      (add-to-list 'eglot-server-programs '(python-mode "/Users/mcawesomegary/Library/Python/3.7/bin/pyls")))
+
+
+  (use-package projectile :ensure t :config
+    (projectile-mode +1)
+    (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+    ;; Bridge projectile and project together so packages that depend on project
+    ;; like eglot work
+    (defun my-projectile-project-find-function (dir)
+      (let ((root (projectile-project-root dir)))
+	(and root (cons 'transient root))))
+  
+    (with-eval-after-load 'project
+      (add-to-list 'project-find-functions 'my-projectile-project-find-function)))
+#+END_SRC
+
+** emacs lsp-mode (not using currently)
+
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package lsp-mode :ensure t :config
+  (setq lsp-eldoc-render-all nil)
+  (setq lsp-markup-dispaly-all nil)
+  (when (eq system 'imac)
+    (add-to-list 'exec-path "/Users/mcawesomegary/Library/Python/3.7/bin/"))
+    (setenv "PATH" (concat (getenv "PATH") ":/Users/mcawesomegary/Library/Python/3.7/bin/")))
+(use-package lsp-ui :ensure t :config
+  (setq lsp-ui-doc-enable t)
+  (setq lsp-ui-sideline-enable nil))
+(use-package company-lsp :ensure t :config)
+(use-package ccls :ensure t :config
+  (setq ccls-executable "/usr/bin/ccls"))
+(use-package cquery :ensure t :config
+  (setq ccls-executable "/usr/bin/cquery"))
+
+(when nil  ; (eq system 'imac) 
+  (use-package ccls :ensure t :config (setq cquery-executable "/usr/local/bin/ccls"))
+  (use-package cquery :ensure t :config (setq cquery-executable "/usr/local/bin/cquery"))
+  (use-package lsp-python-ms
+  :load-path "/Users/mcawesomegary/.emacs.d/site-lisp/lsp-python-ms"
+  :hook (python-mode . lsp)
+  :config
+
+  ;; for dev build of language server
+  (setq lsp-python-ms-dir
+        (expand-file-name "~/install/python-language-server/output/bin/Release/"))
+  ;; for executable of language server, if it's not symlinked on your PATH
+  (setq lsp-python-ms-executable
+        (expand-file-name "~/install/python-language-server/output/bin/Release/osx-x64/publish/Microsoft.Python.LanguageServer"))))
+
+
 #+END_SRC
 
 ** RMSBolt
@@ -1141,6 +1219,62 @@ A hook for compilation, basically stolen from kaleidoscope-evil-state-flash.
 	     ("h" . undo))
   #+END_SRC
 (read-key)
+
+* Anki
+
+#+BEGIN_SRC emacs-lisp
+
+  (use-package anki-editor :ensure t
+	    :config
+	    (defun new-hanja ()
+	      (interactive)
+	      (insert "*                                                             :korean:hanja:
+	  :PROPERTIES:
+	  :ANKI_NOTE_TYPE: HanjaCard
+	  :END:
+
+  ""** Front
+
+  ""** Back
+
+  "))
+
+  ;;; Below is attempt to write the notes into a org structure, insert note part not working
+
+	    (defun anki-editor-get-decks ()
+	      (let ((deck-alist (cdar (anki-editor--anki-connect-invoke 'deckNamesAndIds))))
+		(map 'list (lambda (deck) (symbol-name (car deck))) deck-alist)))
+	  
+	    (defun anki-editor-card-list (deck-name)
+	      2  (cdar (anki-editor--anki-connect-invoke 'findCards `((query . ,(concat "deck:" deck-name))))))
+	  
+					  ; NB Notes are the database entry in Anki, cards are
+					  ; notes+presentation info in deck (can be many cards for a single
+					  ; note, e.g. cloze note with multiple possible deletions shows as one
+					  ; card per deletion). anki-editor looks like it works with notes
+					  ; (e.g. assigns the note-id to org prop list)
+	    (defun anki-editor-notes-list (deck-name)
+	      (cdar (anki-editor--anki-connect-invoke 'cardsToNotes
+						      `((cards . ,(anki-editor-card-list deck-name))))))
+	  
+	    (defun anki-editor-notes-info (deck-name)
+	      (anki-editor--anki-connect-invoke 'notesInfo
+						`((notes . ,(anki-editor-notes-list deck-name)))))
+	    )
+
+
+  (defun anki-editor-insert-note-from-info (note-info)
+    (let ((noteId (alist-get 'noteId note-info))
+	  (model-name (alist-get 'modelName note-info))
+	  (tags (alist-get 'tags note-info))
+	  (fields (alist-get 'fields note-info)))
+      (insert "* :" (string-join tags ":") ":\n")
+      ;; (map (lambda (field) (insert "** "
+      ;; 				 ; (alist-get 'value (cdr field))
+      ;; 				 ))
+      ;; 	 fields))
+    ))
+#+END_SRC
 
 * Postscript: Setting up This File
 
