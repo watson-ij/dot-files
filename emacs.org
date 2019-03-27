@@ -231,14 +231,14 @@ example of setting various different fonts.
     (use-package rainbow-mode :ensure t)
     (deftheme ians-theme "A theme for Ian")
     (cond 
-     ((eq system 'beast) (setq code-font "Fantasque Sans Mono") (setq code-font-size 280))
+;     ((eq system 'beast) (setq code-font "Fantasque Sans Mono") (setq code-font-size 280))
      ((eq system 'beast) (setq code-font "Operator Mono") (setq code-font-size 280))
      ((eq system 'imac) (setq code-font "Monaco") (setq code-font-size 200))
      ((eq system 'beastmaster) (setq code-font "Hack") (setq code-font-size 150))
      (t (setq code-font "DejaVu Sans Mono") (setq code-font-size 125)))
 
     (cond
-     ((eq system 'beast) (setq vari-font "Fantasque Sans Mono") (setq vari-font-size 280))
+;     ((eq system 'beast) (setq vari-font "Fantasque Sans Mono") (setq vari-font-size 280))
      ((eq system 'beast) (setq vari-font "Operator Mono") (setq vari-font-size 280))
      ((eq system 'imac) (setq vari-font "Monaco") (setq vari-font-size 200))
      ((eq system 'beastmaster) (setq vari-font "Hack") (setq vari-font-size 150))
@@ -471,7 +471,9 @@ The king of all git viewers.
     :bind (("C-x g" . magit-status))
     :config
     ;; Using github, etc from magit
-    (use-package forge :ensure t))
+    (use-package forge :ensure t)
+;    (add-to-list 'forge-alist '("gitlab.cern.ch" "gitlab.cern.ch/api/v4" "gitlab.cern.ch" forge-gitlab-repository))
+    )
 #+END_SRC
 
 * Ivy
@@ -583,6 +585,11 @@ Some hints:
 #+END_SRC
 
 * Shell
+
+https://github.com/riscy/shx-for-emacs
+
+Can use several special commands in shell (e.g. :diff a b to diff in
+emacs), and click/enter on filenames to open in emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package shx :ensure t :config
@@ -950,7 +957,7 @@ lispy, maybe with the new keyboard paredit will end up better?
 My own personal nonsense to look at ROOT files in emacs and to run
 plotting code. You'll have to have =pymacs= setup first for it to run.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 
 (unless (or (eq system 'gate) (eq system 'imac) (eq system 'beastmaster))
  (add-to-list 'load-path (concat home-direc ".emacs.d/lisp"))
@@ -1013,7 +1020,9 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
   :config
   (setq elfeed-search-title-max-width 150)
   (elfeed-org)
-  (setq rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+  (setq rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org"))
+  (define-key elfeed-show-mode-map (kbd "b") (lambda () (interactive)  (let ((browse-url-browser-function 'eww-browse-url)) (elfeed-show-visit nil))))
+  (add-hook 'elfeed-show-mode-hook #'olivetti-mode))
 #+END_SRC
 
 * Random ancillary modes
@@ -1040,23 +1049,6 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
   :config
   (autoload 'zig-mode "zig-mode" nil t)
   (add-to-list 'auto-mode-alist '("\\.zig\\'" . zig-mode)))
-#+END_SRC
-
-* Startup buffers
-
-#+BEGIN_SRC emacs-lisp
-(org-toggle-sticky-agenda t)
-(defun ijw-agenda ()
-  (interactive)
-  (delete-other-windows)
-  (org-agenda-list)
-  (org-todo-list))
-(global-set-key (kbd "<f10>") 'ijw-agenda)
-(when (eq system 'beast) (ijw-agenda))
-;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
-; (load "/home/iyan/.opam/4.06.1/share/emacs/site-lisp/tuareg-site-file")
-(when (eq system 'beast) (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el"))
-;; ## end of OPAM user-setup addition for emacs / base ## keep this line
 #+END_SRC
 
 * exwm
@@ -1276,6 +1268,16 @@ A hook for compilation, basically stolen from kaleidoscope-evil-state-flash.
     ))
 #+END_SRC
 
+* GPG
+
+#+BEGIN_SRC emacs-lisp
+(defun ledger-mac ()
+  (interactive)
+  (setenv "GNUPGHOME" "/Users/mcawesomegary/.gnupg/ledger-openpgp")
+  (setenv "SSH_AUTH_SOCK" "/Users/mcawesomegary/.gnupg/ledger-openpgp/S.gpg-agent.ssh")
+  (setq epg-gpg-program "/usr/local/MacGPG2/bin/gpg"))
+#+END_SRC
+
 * Postscript: Setting up This File
 
 The following tangles this very file after save, so all you need to
@@ -1297,5 +1299,43 @@ code can be added before the load.
 #+BEGIN_SRC emacs-lisp
 (when (eq system 'imac)
   (toggle-frame-fullscreen))
+#+END_SRC
+
+* Startup buffers
+
+#+BEGIN_SRC emacs-lisp
+(org-toggle-sticky-agenda t)
+(defun ijw-agenda ()
+  (interactive)
+  (delete-other-windows)
+  (org-agenda-list)
+  (org-todo-list))
+(global-set-key (kbd "<f10>") 'ijw-agenda)
+(when (eq system 'beast) (ijw-agenda))
+
+(use-package dashboard :ensure t 
+:bind (:map dashboard-mode-map ("e" . elfeed))
+:config 
+  (setq dashboard-center-content nil)
+  (setq dashboard-startup-banner 'official)
+  (setq dashboard-banner-logo-title nil)
+  (defun dashboard-insert-custom (list-size)
+   (insert "Elfeed (e)\nOther"))
+  (add-to-list 'dashboard-item-generators  '(custom . dashboard-insert-custom))
+  (add-to-list 'dashboard-items '(custom) t)
+  (setq dashboard-items '(
+   (agenda . 5)
+   (recents  . 5)
+   (bookmarks . 5)
+   (projects . 5)
+   (custom)
+  ))
+  (setq show-week-agenda-p nil)
+  (dashboard-setup-startup-hook))
+
+;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
+; (load "/home/iyan/.opam/4.06.1/share/emacs/site-lisp/tuareg-site-file")
+(when (eq system 'beast) (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el"))
+;; ## end of OPAM user-setup addition for emacs / base ## keep this line
 #+END_SRC
 
