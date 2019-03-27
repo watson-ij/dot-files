@@ -69,12 +69,14 @@ Find out which computer I'm working at
   (when (eq system 'beastmaster)
     (setq home-direc "/home/iyan/"))
   (when (eq system 'gate)
-    (setq home-direc "/home/iwatson/"))
+    (setq home-direc "/home/iwatson/")
+    (add-to-list 'exec-path (concat home-direc "/install/gate/bin")))
   (when (eq system 'kisti1)
     (setq home-direc "/cms/ldap_home/iawatson/"))
 
   (when (eq system 'imac)
-    (setq home-direc "/Users/mcawesomegary/"))
+    (setq home-direc "/Users/mcawesomegary/")
+    (add-to-list 'exec-path (concat home-direc "/install/bin")))
 
   (add-to-list 'exec-path (concat home-direc "/.local/bin"))
 
@@ -460,6 +462,13 @@ Subtree: can't live without it.
     (set-face-background 'dired-subtree-depth-4-face "#aabbbb")
     (set-face-background 'dired-subtree-depth-5-face "#babbaa")
     (set-face-background 'dired-subtree-depth-6-face "#cacbbb"))
+#+END_SRC
+
+* direnv
+
+#+BEGIN_SRC emacs-lisp
+(use-package direnv :ensure t
+  :config (direnv-mode))
 #+END_SRC
 
 * Magit
