@@ -18,7 +18,7 @@ latest org-mode.
 
 #+BEGIN_SRC emacs-lisp
   (progn
-    (package-initialize)
+    ;(package-initialize)
     (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
     (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
 
@@ -531,7 +531,7 @@ Some hints:
   + This is a general [[https://oremacs.com/2016/02/15/counsel-ffap/][ivy feature]], so works in =swiper= too to swipe
     the thing at point
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package ivy :ensure t
     :bind (("C-s" . swiper)
 	   ("M-x" . counsel-M-x)
@@ -573,7 +573,7 @@ Some hints:
 
 =ivy-rich= adds information about buffers/files
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (use-package ivy-rich
     :ensure t
     :config
@@ -582,6 +582,38 @@ Some hints:
      ivy-virtual-abbreviate 'full
      ivy-rich-switch-buffer-align-virtual-buffer t
      ivy-rich-path-style 'abbrev))
+#+END_SRC
+
+* Helm
+
+#+BEGIN_SRC emacs-lisp :tangle yes
+
+(use-package helm :ensure t :config
+  (require 'helm-config)
+  (helm-mode 1)
+  (use-package helm-system-packages :ensure t :config (require 'helm-system-packages-pacman))
+  (use-package helm-swoop :ensure t :config 
+    (define-key helm-swoop-map (kbd "C-l") 'kill-whole-line)
+    (define-key helm-multi-swoop-map (kbd "C-l") 'kill-whole-line)
+    (global-set-key (kbd "C-s") 'helm-swoop))
+  (global-set-key (kbd "C-x C-f") 'helm-find-files)
+  (global-set-key (kbd "M-y") 'helm-show-kill-ring)
+  (global-set-key (kbd "M-y") 'helm-show-kill-ring)
+  (global-set-key (kbd "C-x b") 'helm-mini)
+  (use-package helm-ag :ensure t :config (global-set-key (kbd "s-k") 'helm-ag))
+  (use-package helm-google :ensure t :config (global-set-key (kbd "C-c g") 'helm-google))
+  (if (eq system 'beast)
+    (use-package helm-exwm :ensure t :config
+    (setq helm-exwm-emacs-buffers-source (helm-exwm-build-emacs-buffers-source))
+    (setq helm-exwm-source (helm-exwm-build-source))
+    (setq helm-mini-default-sources `(helm-exwm-emacs-buffers-source
+                                      helm-exwm-source
+                                      helm-source-recentf))))
+  (global-set-key (kbd "M-x") 'helm-M-x))
+
+; (ivy-mode 0)
+; (counsel-mode 0)
+
 #+END_SRC
 
 * Avy
@@ -647,7 +679,7 @@ emacs), and click/enter on filenames to open in emacs
     ;; :bind (:map geiser-mode-map
     ;; 		("C-<tab>" . company-complete))
     :config
-    (setq geiser-active-implementations '(guile chicken)))
+    (setq geiser-active-implementations '(guile chicken mit)))
 
   ; (setq geiser-active-implementations '(pyscm guile chicken))
 #+END_SRC
@@ -729,6 +761,16 @@ emacs), and click/enter on filenames to open in emacs
 				  "#+END_SRC\n"
 				  "#+ATTR_LATEX: :width 0.4\\textwidth\n"
 				  "#+RESULTS:\n[[file:]]\n")))
+      (add-to-list 'org-structure-template-alist
+		   `("w" ,(concat "#+ATTR_LATEX: :width .5\\textwidth\n")))
+      (add-to-list 'org-structure-template-alist
+		   `("ss" ,(concat "#+BEGIN_SRC shell\n?\n#+END_SRC\n")))
+      (add-to-list 'org-structure-template-alist
+		   `("se" ,(concat "#+BEGIN_SRC emacs-lisp\n?\n#+END_SRC\n")))
+      (add-to-list 'org-structure-template-alist
+		   `("sp" ,(concat "#+BEGIN_SRC python :session\n?\n#+END_SRC\n")))
+      (add-to-list 'org-structure-template-alist
+		   `("spf" ,(concat "#+BEGIN_SRC python :results file :session\n?\n#+END_SRC\n")))
 
       (use-package deft :ensure t)
       ; turn off org-mode trying to do things with indents
@@ -1092,6 +1134,12 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
   (add-to-list 'auto-mode-alist '("\\.zig\\'" . zig-mode)))
 #+END_SRC
 
+** lxd-tramp
+
+#+BEGIN_SRC emacs-lisp
+(use-package lxd-tramp :ensure t)
+#+END_SRC
+
 * exwm
 
 Setup for the laptop only.
@@ -1128,9 +1176,11 @@ https://github.com/ch11ng/exwm
 	      (lambda () (exwm-workspace-rename-buffer exwm-class-name)))
   
     ;; commands
-    (exwm-input-set-key (kbd "s-p") 'counsel-linux-app)
-    (exwm-input-set-key (kbd "s-s") 'ansi-term)
+    (exwm-input-set-key (kbd "s-p") 'helm-run-external-command)
+    (exwm-input-set-key (kbd "s-s") 'helm-multi-swoop-all)
+;    (exwm-input-set-key (kbd "s-f") 'helm-)
     (exwm-input-set-key (kbd "s-r") #'exwm-reset)
+    (exwm-input-set-key (kbd "s-t") #'helm-top)
     (exwm-input-set-key (kbd "s-w") #'exwm-workspace-switch)
     (dotimes (i 10)
       (exwm-input-set-key (kbd (format "s-%d" i))
