@@ -500,7 +500,9 @@ Subtree: can't live without it.
 
 #+BEGIN_SRC emacs-lisp
 (use-package direnv :ensure t
-  :config (direnv-mode))
+  :config 
+  (direnv-mode)
+  (setq direnv-always-show-summary nil))
 #+END_SRC
 
 * Magit
@@ -912,6 +914,7 @@ https://github.com/joaotavora/eglot
 	:config
 	; https://github.com/hansec/fortran-language-server
 	(add-to-list 'eglot-server-programs '(fortran-mode . ("fortls")))
+	(setq eglot-connect-timeout 120)
 	(add-hook 'python-mode-hook (lambda ()
 				      (interactive)
 				      (local-set-key (kbd "M-n") #'flymake-goto-next-error)
@@ -932,10 +935,16 @@ https://github.com/joaotavora/eglot
       (setq python-check-command "/Users/mcawesomegary/Library/Python/3.7/bin/pytest")
       (add-to-list 'eglot-server-programs '(python-mode "/Users/mcawesomegary/Library/Python/3.7/bin/pyls")))
 
+    (when (eq system 'gate)
+      (add-to-list 'eglot-server-programs '((c++ mode c-mode) . (eglot-clangd "clangd"))))
 
   (use-package projectile :ensure t :config
     (projectile-mode +1)
     (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+    
+    (projectile-register-project-type 'cmssw '(".envrc")
+      :compile "scram b -j10")
+
     ;; Bridge projectile and project together so packages that depend on project
     ;; like eglot work
     (defun my-projectile-project-find-function (dir)
