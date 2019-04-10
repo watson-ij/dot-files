@@ -276,20 +276,39 @@ example of setting various different fonts.
 	   ;; (fg-color-dark "#000055")
 	   ;; (fg-color-very-dark "#000022")
 
-	   (bg-color (if (eq system 'imac) "#a1a1a1" "#c4c4c4"))
-	   (bg-color-dark "#cccccc")
-	   (bg-color-very-dark "#777777")
-	   (bg-color-light (if (eq system 'imac) "#bfbfbf" "#d5d5d5"))
-	   (fg-color (if (eq system 'imac) "#111166" "#121266"))
-	   (fg-color-light (if (eq system 'imac) "#222266" "#444488"))
-	   (fg-color-dark "#000044")
-	   (fg-color-very-dark "#000022")
+	   ;; ;; Light mode
+	   ;; (bg-color (if (eq system 'imac) "#a1a1a1" "#c4c4c4"))
+	   ;; (bg-color-dark "#cccccc")
+	   ;; (bg-color-very-dark "#777777")
+	   ;; (bg-color-light (if (eq system 'imac) "#bfbfbf" "#d5d5d5"))
+	   ;; (fg-color (if (eq system 'imac) "#111166" "#121266"))
+	   ;; (fg-color-light (if (eq system 'imac) "#222266" "#444488"))
+	   ;; (fg-color-dark "#000044")
+	   ;; (fg-color-very-dark "#000022")
+
+	   ;; (verb-color "#888860")
+	   ;; (mid-color "#4f7f30")
+	   ;; (contrast-color "#772222")
+	   ;; (highlight-color "#447799")
+	   ;; (success-color "#40a010")
+
+	   ;; Dark mode
+	   (bg-color "#343434") ; (if (eq system 'imac) "#a1a1a1" "#343434")
+	   (bg-color-dark "#2f2f2f")
+	   (bg-color-very-dark "#111111")
+	   (bg-color-light "#414141") ; (if (eq system 'imac) "#bfbfbf" "#414141")
+	   (fg-color "#9282f6")  ; (if (eq system 'imac) "#111166" "#9282f6")
+	   (fg-color-light "#c484c8") ; (if (eq system 'imac) "#222266" "#c484c8")
+	   (fg-color-dark "#777799")
+	   (fg-color-very-dark "#555588")
 
 	   (verb-color "#888860")
-	   (mid-color "#4f7f30")
-	   (contrast-color "#992222")
+	   (mid-color "#6f8f50")
+	   (contrast-color "#bf5353")
 	   (highlight-color "#447799")
 	   (success-color "#40a010")
+
+	   
 	  )
       (custom-theme-set-faces
        'ians-theme
@@ -320,7 +339,7 @@ example of setting various different fonts.
        `(font-lock-builtin-face ((t (:foreground ,fg-color :weight light :slant italic))))
        `(font-lock-comment-face ((t (:foreground ,fg-color-light :weight light :slant italic))))
        ;; `(font-lock-comment-delimiter-face ((t (:foreground ,zenburn-green-2))))
-       ;; `(font-lock-constant-face ((t (:foreground ,zenburn-green+4))))
+       `(font-lock-constant-face ((t (:foreground ,mid-color))))
        `(font-lock-doc-face ((t (:foreground ,fg-color-light))))
        `(font-lock-function-name-face ((t (:foreground ,fg-color-dark))))
        `(font-lock-keyword-face ((t (:foreground ,mid-color :weight normal))))
@@ -345,6 +364,20 @@ example of setting various different fonts.
        `(org-block-begin-line ((t (:background ,bg-color-dark :weight bold :family ,code-font))))
        `(org-verbatim ((t (:foreground ,verb-color :weight extra-light))))
 
+       ;; helm
+       `(helm-source-header ((t (:foreground ,fg-color :slant italic :weight bold  :background ,bg-color-light))))
+       `(helm-header-line-left-margin ((t (:background ,bg-color-light :foreground ,contrast-color))))
+       `(helm-candidate-number ((t (:foreground ,contrast-color))))
+       `(helm-visible-mark ((t (:background ,success-color :foreground ,bg-color-very-dark))))
+       `(helm-selection ((t (:background ,bg-color-very-dark :foreground ,highlight-color))))
+       `(helm-buffer-directory ((t (:background ,bg-color :foreground ,contrast-color))))
+       `(helm-bookmark-directory ((t (:background ,bg-color :foreground ,contrast-color))))
+       `(helm-ff-directory ((t (:background ,bg-color :foreground ,contrast-color))))
+       `(helm-swoop-target-word-face ((t (:background ,fg-color-dark :foreground ,bg-color-very-dark))))
+
+       ;; magit
+       `(magit-section-highlight ((t (:background ,bg-color-very-dark))))
+
        ;; comint
        `(comint-highlight-prompt ((t (:weight bold :slant normal))))
        `(comint-highlight-input ((t (:weight normal :slant italic))))
@@ -359,7 +392,6 @@ example of setting various different fonts.
       ;; (set-face-attribute 'font-lock-comment-face nil :family code-font)
       ;; (set-face-attribute 'font-lock-keyword-face nil :family code-font)
       ;; (set-face-attribute 'org-block nil :family code-font :height 280)
-
       )
 
       (setq ansi-color-names-vector
@@ -397,7 +429,7 @@ Some helper functions
 Resources:
 - http://emacsfodder.github.io/blog/notes-on-deftheme/
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 
 (add-to-list 'initial-frame-alist '(alpha . (95 . 75)))
 (add-to-list 'default-frame-alist '(alpha . (95 . 75)))
@@ -456,12 +488,12 @@ Subtree: can't live without it.
 	   ("<backtab>" . #'dired-subtree-cycle))
     :config
     (setq dired-listing-switches "-alh")
-    (set-face-background 'dired-subtree-depth-1-face "#bbaaaa")
-    (set-face-background 'dired-subtree-depth-2-face "#aaaa99")
-    (set-face-background 'dired-subtree-depth-3-face "#aa99aa")
-    (set-face-background 'dired-subtree-depth-4-face "#aabbbb")
-    (set-face-background 'dired-subtree-depth-5-face "#babbaa")
-    (set-face-background 'dired-subtree-depth-6-face "#cacbbb"))
+    (set-face-background 'dired-subtree-depth-1-face "#4a2727")
+    (set-face-background 'dired-subtree-depth-2-face "#27274a")
+    (set-face-background 'dired-subtree-depth-3-face "#274a27")
+    (set-face-background 'dired-subtree-depth-4-face "#4b2a4b")
+    (set-face-background 'dired-subtree-depth-5-face "#4b4b2a")
+    (set-face-background 'dired-subtree-depth-6-face "#2a4b4b"))
 #+END_SRC
 
 * direnv
