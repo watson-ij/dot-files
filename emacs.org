@@ -236,14 +236,14 @@ example of setting various different fonts.
 ;     ((eq system 'beast) (setq code-font "Fantasque Sans Mono") (setq code-font-size 280))
      ((eq system 'beast) (setq code-font "Operator Mono") (setq code-font-size 280))
      ((eq system 'imac) (setq code-font "Monaco") (setq code-font-size 200))
-     ((eq system 'beastmaster) (setq code-font "Hack") (setq code-font-size 150))
+     ((eq system 'beastmaster) (setq code-font "Fira Mono") (setq code-font-size 150))
      (t (setq code-font "DejaVu Sans Mono") (setq code-font-size 125)))
 
     (cond
 ;     ((eq system 'beast) (setq vari-font "Fantasque Sans Mono") (setq vari-font-size 280))
      ((eq system 'beast) (setq vari-font "Operator Mono") (setq vari-font-size 280))
      ((eq system 'imac) (setq vari-font "Monaco") (setq vari-font-size 200))
-     ((eq system 'beastmaster) (setq vari-font "Hack") (setq vari-font-size 150))
+     ((eq system 'beastmaster) (setq vari-font "Fira Mono") (setq vari-font-size 150))
      (t (setq vari-font "DejaVu Sans Mono") (setq vari-font-size 125)))
 
     ;; color palette, turn on rainbow mode to see the colors in-buffer
@@ -381,6 +381,11 @@ example of setting various different fonts.
        ;; comint
        `(comint-highlight-prompt ((t (:weight bold :slant normal))))
        `(comint-highlight-input ((t (:weight normal :slant italic))))
+
+       ;; ansi-term
+       `(term-color-blue ((t (:foreground "#4e6eaf"))))
+       `(term-color-cyan ((t (:foreground "#309f9f"))))
+       `(term-color-green ((t (:foreground "#60af40"))))
 
       ;; dired
 	`(dired-directory ((t (:foreground ,contrast-color))))
@@ -673,6 +678,10 @@ emacs), and click/enter on filenames to open in emacs
   (defun shx-cmd-git (_args)
     "(SAFE) Open magit in the current directory"
     (magit-status-internal default-directory)))
+
+(defun ijw-shell (buf)
+ (interactive "sShell name: ")
+ (shell (concat "*shell*<" buf ">")))
 #+END_SRC
 
 * geiser: scheme
@@ -758,22 +767,20 @@ emacs), and click/enter on filenames to open in emacs
 					    ;(julia . t)
 	 (latex . t)))
 
-      (add-to-list 'org-structure-template-alist
-		   `("r" ,(concat "#+BEGIN_SRC python :session root :results file :exports results\n"
-				  "?\n"
-				  "#+END_SRC\n"
-				  "#+ATTR_LATEX: :width 0.4\\textwidth\n"
-				  "#+RESULTS:\n[[file:]]\n")))
-      (add-to-list 'org-structure-template-alist
-		   `("w" ,(concat "#+ATTR_LATEX: :width .5\\textwidth\n")))
-      (add-to-list 'org-structure-template-alist
-		   `("ss" ,(concat "#+BEGIN_SRC shell\n?\n#+END_SRC\n")))
-      (add-to-list 'org-structure-template-alist
-		   `("se" ,(concat "#+BEGIN_SRC emacs-lisp\n?\n#+END_SRC\n")))
-      (add-to-list 'org-structure-template-alist
-		   `("sp" ,(concat "#+BEGIN_SRC python :session\n?\n#+END_SRC\n")))
-      (add-to-list 'org-structure-template-alist
-		   `("spf" ,(concat "#+BEGIN_SRC python :results file :session\n?\n#+END_SRC\n")))
+      (require 'org-tempo) ; old style structure lists (setq org-structure-template-alist '())
+      (add-to-list 'org-structure-template-alist '("se" . "src emacs-lisp"))
+      (add-to-list 'org-structure-template-alist '("sp" . "src python"))
+      (add-to-list 'org-structure-template-alist '("spf" . "src python :results file"))
+      (add-to-list 'org-structure-template-alist '("ss" . "src shell"))
+;      (add-to-list 'org-tempo-keywords-alist '("w" . "attr_latex"))
+      (tempo-define-template "attr latex width" '("#+attr_latex: :width .5\\textwidth") "<w")
+
+      ;; (add-to-list 'org-structure-template-alist
+      ;; 		   `("r" ,(concat "#+BEGIN_SRC python :session root :results file :exports results\n"
+      ;; 				  "?\n"
+      ;; 				  "#+END_SRC\n"
+      ;; 				  "#+ATTR_LATEX: :width 0.4\\textwidth\n"
+      ;; 				  "#+RESULTS:\n[[file:]]\n")))
 
       (use-package deft :ensure t)
       ; turn off org-mode trying to do things with indents
@@ -938,6 +945,8 @@ https://github.com/joaotavora/eglot
 
     (when (eq system 'gate)
       (add-to-list 'eglot-server-programs '((c++ mode c-mode) . (eglot-clangd "clangd"))))
+    (when (eq system 'beast)
+      (add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd")))
 
   (use-package projectile :ensure t :config
     (projectile-mode +1)
@@ -1106,6 +1115,13 @@ plotting code. You'll have to have =pymacs= setup first for it to run.
   (use-package ob-nim :ensure t))
 #+END_SRC
 
+* elixir
+
+#+begin_src emacs-lisp
+;  (use-package lsp-elixir :ensure t :config (add-hook 'elixir-mode-hook #'lsp))
+(use-package alchemist :ensure t :config)
+#+end_src
+
 * elfeed: rss reader
 
 #+BEGIN_SRC emacs-lisp
@@ -1214,6 +1230,7 @@ https://github.com/ch11ng/exwm
 	    ([?\C-v] . [next])
 	    ([?\C-d] . [delete])
 	    ([?\C-k] . [S-end delete])))
+    (setq exwm-workspace-show-all-buffers t)
     ;; Enable EXWM
     (exwm-enable))
 #+END_SRC
@@ -1371,13 +1388,78 @@ A hook for compilation, basically stolen from kaleidoscope-evil-state-flash.
 
 * GPG
 
+GPG with Ledger Nano S
+
 #+BEGIN_SRC emacs-lisp
 (defun ledger-mac ()
   (interactive)
   (setenv "GNUPGHOME" "/Users/mcawesomegary/.gnupg/ledger-openpgp")
   (setenv "SSH_AUTH_SOCK" "/Users/mcawesomegary/.gnupg/ledger-openpgp/S.gpg-agent.ssh")
   (setq epg-gpg-program "/usr/local/MacGPG2/bin/gpg"))
+(defun ledger-linux ()
+  (interactive)
+  (setq epg-gpg-home-directory "/home/iyan/.gnupg/ledger-gpg")
+  (setq epg-gpg-program "/usr/bin/gpg")
+  ;; (setenv "GPG_AGENT_INFO"
+  ;;   (string-trim (shell-command-to-string "gpgconf --list-dirs agent-socket")))
+  (setenv "GNUPGHOME" "/home/iyan/.gnupg/ledger-gpg")
+  (setq epa-pinentry-mode nil)
+  (setenv "SSH_AUTH_SOCK"
+    (string-trim (shell-command-to-string "gpgconf --list-dirs agent-ssh-socket")))
+ )
+
 #+END_SRC
+
+Pass: password store functionailty
+
+- https://github.com/NicolasPetton/pass
+  - Manage in emacs (includes pass-otp support)
+- https://github.com/emacs-helm/helm-pass
+  - Manage with helm
+- https://github.com/DamienCassou/auth-password-store
+  - integrate with emacs' auth-source
+
+#+BEGIN_SRC emacs-lisp
+(use-package helm-pass :ensure t)
+#+END_SRC
+
+* org sync
+
+  #+begin_src emacs-lisp
+  (use-package org-sync :ensure t :config (require 'org-sync-gitlab) (load "~/.emacs.d/sync.el"))
+  #+end_src
+
+* All the icons
+
+  #+begin_src 
+  
+  #+end_src
+
+* Eyebrowse
+
+#+begin_src emacs-lisp
+(use-package eyebrowse :ensure t :config (eyebrowse-mode t))
+#+end_src
+
+* calfw
+
+#+begin_src emacs-lisp
+(use-package calfw :ensure t :config (use-package calfw-org :ensure t)
+
+
+(defun calfw-open-calendar ()
+  (interactive)
+  (cfw:open-calendar-buffer
+   :contents-sources
+   (list
+    (cfw:org-create-source "#7bef7b")  ; orgmode source
+;    (cfw:howm-create-source "Blue")  ; howm source
+;    (cfw:cal-create-source "Orange") ; diary source
+;    (cfw:ical-create-source "Moon" "~/moon.ics" "Gray")  ; ICS source1
+;    (cfw:ical-create-source "gcal" "https://..../basic.ics" "IndianRed") ; google calendar ICS
+   ))) 
+)
+#+end_src
 
 * Postscript: Setting up This File
 
@@ -1438,4 +1520,8 @@ code can be added before the load.
 ; (load "/home/iyan/.opam/4.06.1/share/emacs/site-lisp/tuareg-site-file")
 (when (eq system 'beast) (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el"))
 ;; ## end of OPAM user-setup addition for emacs / base ## keep this line
+
+      (setq ansi-color-names-vector
+        ["black" "red3" "#60af40" "yellow3" "#4e6eaf" "magenta3" "#309f9f" "gray90"])
+      (setq ansi-color-map (ansi-color-make-color-map))
 #+END_SRC
